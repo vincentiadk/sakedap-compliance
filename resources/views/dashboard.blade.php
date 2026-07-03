@@ -144,11 +144,14 @@ body { background-color: #f8f9fa; }
     <script>
     function toggleDashFilter() {
         const type = document.querySelector('input[name="filter_type"]:checked')?.value ?? 'tahun';
-        document.querySelectorAll('.dash-filter-section').forEach(el => el.style.display = 'none');
-        const el = document.getElementById('dash_filter_' + type);
-        if (el) el.style.display = '';
+        document.querySelectorAll('.dash-filter-section').forEach(el => {
+            const active = el.id === 'dash_filter_' + type;
+            el.style.display = active ? '' : 'none';
+            // disable inputs di seksi yg tidak aktif agar tidak ikut submit
+            el.querySelectorAll('input, select').forEach(inp => inp.disabled = !active);
+        });
     }
-    // init on load
+
     function dashSelectAll(check) {
         document.querySelectorAll('.dash-prov-cb').forEach(cb => cb.checked = check);
     }

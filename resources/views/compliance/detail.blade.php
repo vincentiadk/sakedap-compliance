@@ -137,7 +137,7 @@ body { background-color: #f8f9fa; }
     {{-- Filter pencarian judul --}}
     <div class="card shadow-sm mb-3">
         <div class="card-header d-flex justify-content-between align-items-center" style="cursor:pointer" onclick="toggleDetailFilter()">
-            <span class="fw-bold"><i class="fas fa-search me-2"></i>Filter Judul</span>
+            <span class="fw-bold"><i class="fas fa-search me-2"></i>Filter</span>
             <i class="fas fa-chevron-down" id="detailFilterChevron"></i>
         </div>
         <div id="detailFilterBody" style="display:none">
