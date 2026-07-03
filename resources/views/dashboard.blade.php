@@ -19,7 +19,12 @@ body { background-color: #f8f9fa; }
 
 <div class="container-fluid mt-4 px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>📊 Dashboard Kepatuhan Penerbit KCKR</h2>
+        <div>
+            <h2 class="mb-0">📊 Dashboard Kepatuhan Penerbit KCKR</h2>
+            @if($isV2 ?? false)
+                <span class="badge bg-primary ms-1">Mode 2026+ — berbasis Tanggal Terbit</span>
+            @endif
+        </div>
         @php
             $toCompliance = array_filter([
                 'filter_type'  => $dateFilter['type'] ?? 'tahun',
@@ -31,8 +36,9 @@ body { background-color: #f8f9fa; }
             if (!empty($provinceIds)) {
                 $toCompliance['province_ids'] = $provinceIds;
             }
+            $detailRoute = ($isV2 ?? false) ? route('compliance_v2.index') : route('compliance.index');
         @endphp
-        <a href="{{ route('compliance.index') }}?{{ http_build_query($toCompliance) }}" class="btn btn-outline-primary btn-sm">
+        <a href="{{ $detailRoute }}?{{ http_build_query($toCompliance) }}" class="btn btn-outline-primary btn-sm">
             <i class="fas fa-table"></i> Lihat Detail
         </a>
     </div>
@@ -239,24 +245,32 @@ body { background-color: #f8f9fa; }
     <div class="row g-3">
         @foreach($levels as $nama => $level)
             @php
-                $d = $distribusiMap[$nama] ?? null;
+                $d      = $distribusiMap[$nama] ?? null;
                 $jumlah = $d ? $d->JUMLAH : 0;
                 $pct    = $total->TOTAL_PENERBIT > 0 ? round($jumlah / $total->TOTAL_PENERBIT * 100, 1) : 0;
-                $colorMap = ['danger' => 'danger', 'orange' => 'warning', 'warning' => 'warning', 'info' => 'info', 'success' => 'success'];
-                $bg = $colorMap[$level['color']];
+                // hex warna per level — tidak bergantung Bootstrap class
+                $hex = match($level['color']) {
+                    'danger'  => '#dc3545',
+                    'orange'  => '#fd7e14',
+                    'warning' => '#ffc107',
+                    'info'    => '#0dcaf0',
+                    'success' => '#198754',
+                    default   => '#6c757d',
+                };
+                $textDark = in_array($level['color'], ['warning']) ? 'color:#000' : '';
             @endphp
             <div class="col-md">
-                <div class="card shadow-sm stat-card h-100 border-top border-3 border-{{ $bg }}">
+                <div class="card shadow-sm stat-card h-100" style="border-top:3px solid {{ $hex }}">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge bg-{{ $bg }} {{ $bg == 'warning' ? 'text-dark' : '' }}">{{ $level['range'] }}</span>
-                            <i class="fas {{ $level['icon'] }} text-{{ $bg }} fa-lg"></i>
+                            <span class="badge" style="background:{{ $hex }};{{ $textDark }}">{{ $level['range'] }}</span>
+                            <i class="fas {{ $level['icon'] }} fa-lg" style="color:{{ $hex }}"></i>
                         </div>
                         <h6 class="fw-bold">{{ $nama }}</h6>
-                        <h3 class="text-{{ $bg }} fw-bold mb-1">{{ number_format($jumlah) }}</h3>
+                        <h3 class="fw-bold mb-1" style="color:{{ $hex }}">{{ number_format($jumlah) }}</h3>
                         <small class="text-muted">penerbit ({{ $pct }}%)</small>
-                        <div class="progress mt-2" style="height: 6px;">
-                            <div class="progress-bar bg-{{ $bg }}" style="width: {{ $pct }}%"></div>
+                        <div class="progress mt-2" style="height:6px">
+                            <div class="progress-bar" style="width:{{ $pct }}%;background:{{ $hex }}"></div>
                         </div>
                         @if($d)
                             <hr class="my-2">
@@ -271,6 +285,78 @@ body { background-color: #f8f9fa; }
             </div>
         @endforeach
     </div>
+
+    {{-- ── Section Status Terbit (hanya tampil jika mode 2026+) ── --}}
+    @if(($isV2 ?? false) && isset($total) && $total)
+    <div class="row g-3 mt-2">
+        <div class="col-12">
+            <h5 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                📋 Status Terbit {{ request('filter_year', date('Y')) }}
+            </h5>
+        </div>
+
+        {{-- Sudah Terbit --}}
+        <div class="col-md">
+            <div class="card shadow-sm stat-card h-100 border-top border-3 border-success">
+                <div class="card-body text-center">
+                    <div class="text-success mb-1"><i class="fas fa-check-circle fa-lg"></i></div>
+                    <h6 class="text-muted">Sudah Terbit</h6>
+                    <h3 class="text-success fw-bold">{{ number_format($total->TOTAL_TERBIT ?? 0) }}</h3>
+                    <small class="text-muted">judul</small>
+                </div>
+            </div>
+        </div>
+
+        {{-- Belum Terbit --}}
+        <div class="col-md">
+            <div class="card shadow-sm stat-card h-100 border-top border-3 border-secondary">
+                <div class="card-body text-center">
+                    <div class="text-secondary mb-1"><i class="fas fa-hourglass-half fa-lg"></i></div>
+                    <h6 class="text-muted">Belum Terbit</h6>
+                    <h3 class="text-secondary fw-bold">{{ number_format($total->TOTAL_BELUM_TERBIT ?? 0) }}</h3>
+                    <small class="text-muted">judul</small>
+                </div>
+            </div>
+        </div>
+
+        {{-- Hutang Terbit --}}
+        <div class="col-md">
+            <div class="card shadow-sm stat-card h-100 border-top border-3 border-warning">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-1"><i class="fas fa-exclamation-triangle fa-lg"></i></div>
+                    <h6 class="text-muted">Hutang Terbit</h6>
+                    <h3 class="text-warning fw-bold">{{ number_format($total->TOTAL_HUTANG_TERBIT ?? 0) }}</h3>
+                    <small class="text-muted">judul melewati deadline terbit</small>
+                </div>
+            </div>
+        </div>
+
+        {{-- Lewat Teguran --}}
+        <div class="col-md">
+            <div class="card shadow-sm stat-card h-100 border-top border-3 border-danger">
+                <div class="card-body text-center">
+                    <div class="text-danger mb-1"><i class="fas fa-bell fa-lg"></i></div>
+                    <h6 class="text-muted">Lewat Batas Teguran</h6>
+                    <h3 class="text-danger fw-bold">{{ number_format($total->TOTAL_LEWAT_TEGURAN ?? 0) }}</h3>
+                    <small class="text-muted">judul melewati +30 hari teguran</small>
+                </div>
+            </div>
+        </div>
+
+        {{-- Belum KCKR --}}
+        <div class="col-md">
+            <div class="card shadow-sm stat-card h-100 border-top border-3 border-orange" style="border-color:#fd7e14!important">
+                <div class="card-body text-center">
+                    <div class="mb-1" style="color:#fd7e14"><i class="fas fa-file-invoice fa-lg"></i></div>
+                    <h6 class="text-muted">Belum KCKR</h6>
+                    <h3 class="fw-bold" style="color:#fd7e14">{{ number_format($total->TOTAL_BELUM_KCKR ?? 0) }}</h3>
+                    <small class="text-muted">sudah terbit, belum setor KCKR</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     @endif
 </div>
 

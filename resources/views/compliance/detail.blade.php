@@ -379,8 +379,79 @@ body { background-color: #f8f9fa; }
     </div>
 </div>
 
+{{-- Export Loading Modal --}}
+<div class="modal fade" id="exportModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1976D2;color:#fff">
+                <h5 class="modal-title"><i class="fas fa-file-excel me-2"></i>Menyiapkan File Excel</h5>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small id="exportProgressLabel" class="text-muted">Memulai...</small>
+                        <small id="exportProgressPct" class="text-muted fw-bold">0%</small>
+                    </div>
+                    <div class="progress" style="height:12px;border-radius:6px">
+                        <div id="exportProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                            role="progressbar" style="width:0%;transition:width .4s ease"></div>
+                    </div>
+                </div>
+                <div class="mt-2 text-center text-muted" style="font-size:.8rem">
+                    <i class="fas fa-info-circle"></i>
+                    Jangan tutup halaman ini. File akan otomatis terunduh.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+function doDetailExport() {
+    const token  = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const base   = '{{ route("compliance.detail.export", $penerbit->ID) }}';
+    const query  = '{{ http_build_query(request()->except("page")) }}';
+    const url    = base + '?' + query + '&download_token=' + token;
+
+    const modal  = new bootstrap.Modal(document.getElementById('exportModal'));
+    modal.show();
+
+    let pct = 0;
+    document.getElementById('exportProgressBar').style.width = '0%';
+    document.getElementById('exportProgressPct').textContent = '0%';
+    document.getElementById('exportProgressLabel').textContent = 'Menghubungi server...';
+
+    window.location.href = url;
+
+    const startTime = Date.now();
+    const animInt = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        pct = Math.min(88, Math.round(elapsed / 15 * 88));
+        document.getElementById('exportProgressBar').style.width = pct + '%';
+        document.getElementById('exportProgressPct').textContent = pct + '%';
+        document.getElementById('exportProgressLabel').textContent =
+            elapsed < 3  ? 'Mengambil data dari database...' :
+            elapsed < 10 ? 'Memproses daftar judul...' :
+                           'Membuat file Excel...';
+    }, 400);
+
+    const pollInt = setInterval(() => {
+        if (document.cookie.includes('dl_' + token)) {
+            clearInterval(animInt);
+            clearInterval(pollInt);
+            document.getElementById('exportProgressBar').style.width = '100%';
+            document.getElementById('exportProgressPct').textContent = '100%';
+            document.getElementById('exportProgressLabel').textContent = 'File berhasil dikirim!';
+            document.getElementById('exportProgressBar').classList.remove('progress-bar-animated');
+            document.cookie = 'dl_' + token + '=; Max-Age=0; path=/';
+            setTimeout(() => modal.hide(), 1500);
+        }
+    }, 800);
+
+    setTimeout(() => { clearInterval(animInt); clearInterval(pollInt); modal.hide(); }, 300000);
+}
+
 function toggleDetailFilter() {
     const body    = document.getElementById('detailFilterBody');
     const chevron = document.getElementById('detailFilterChevron');

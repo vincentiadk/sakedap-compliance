@@ -8,10 +8,17 @@
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
+        <div class="container-fluid px-4">
             <a class="navbar-brand" href="/">
                 <strong>📚 SAKEDAP Compliance</strong>
             </a>
+            <div class="navbar-nav flex-row gap-3">
+                <a class="nav-link {{ request()->is('/') || request()->is('dashboard') ? 'active fw-semibold' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
+                <a class="nav-link {{ request()->is('compliance*') && !request()->is('compliance-v2*') ? 'active fw-semibold' : '' }}" href="{{ route('compliance.index') }}">Compliance</a>
+                <a class="nav-link {{ request()->is('compliance-v2*') ? 'active fw-semibold' : '' }}" href="{{ route('compliance_v2.index') }}">
+                    Compliance 2026+ <span class="badge bg-warning text-dark" style="font-size:.6rem">BARU</span>
+                </a>
+            </div>
         </div>
     </nav>
 

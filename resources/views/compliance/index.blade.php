@@ -118,12 +118,13 @@ body { background-color: #f8f9fa; }
                         @endforeach
                     </div>
                     @php
-                        $initYear  = (int) request('filter_year', 2026);
+                        $initYear  = (int) request('filter_year', 2025);
+                        $initYear  = min($initYear, 2025); // max 2025
                         $initMonth = (int) request('filter_month', date('n'));
                     @endphp
                     <div id="filter_tahun" class="filter-section">
                         <select name="filter_year" class="form-select filter-input">
-                            @for($y = 2026; $y >= 2015; $y--)
+                            @for($y = 2025; $y >= 2015; $y--)
                                 <option value="{{ $y }}" {{ $y == $initYear ? 'selected' : '' }}>Tahun {{ $y }}</option>
                             @endfor
                         </select>
@@ -139,7 +140,7 @@ body { background-color: #f8f9fa; }
                             </div>
                             <div class="col-6">
                                 <select name="filter_year_bulan" class="form-select filter-input">
-                                    @for($y = 2026; $y >= 2015; $y--)
+                                    @for($y = 2025; $y >= 2015; $y--)
                                         <option value="{{ $y }}" {{ $y == $initYear ? 'selected' : '' }}>{{ $y }}</option>
                                     @endfor
                                 </select>
@@ -150,11 +151,11 @@ body { background-color: #f8f9fa; }
                         <div class="row g-2">
                             <div class="col-6">
                                 <input type="date" name="start_date" class="form-control filter-input"
-                                    value="{{ request('start_date', '2026-01-01') }}">
+                                    value="{{ request('start_date', '2025-01-01') }}">
                             </div>
                             <div class="col-6">
                                 <input type="date" name="end_date" class="form-control filter-input"
-                                    value="{{ request('end_date', '2026-12-31') }}">
+                                    value="{{ request('end_date', '2025-12-31') }}">
                             </div>
                         </div>
                     </div>
@@ -537,7 +538,7 @@ function resetFilter() {
     updateSortIcons();
     document.querySelector('#type_tahun').checked = true;
     toggleDateFilter();
-    document.querySelector('[name="filter_year"]').value = '2026';
+    document.querySelector('[name="filter_year"]').value = '2025';
     document.querySelector('[name="kategori"]').value    = '';
     document.querySelector('[name="persentase"]').value  = '';
     document.querySelector('[name="search"]').value      = '';
