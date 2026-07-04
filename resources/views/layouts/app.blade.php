@@ -10,13 +10,14 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid px-4">
             <a class="navbar-brand" href="/">
-                <strong>📚 SAKEDAP Compliance</strong>
+                <strong>📚 MONITORING PENERBIT</strong>
             </a>
             <div class="navbar-nav flex-row gap-3">
                 <a class="nav-link {{ request()->is('/') || request()->is('dashboard') ? 'active fw-semibold' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
-                <a class="nav-link {{ request()->is('compliance*') && !request()->is('compliance-v2*') ? 'active fw-semibold' : '' }}" href="{{ route('compliance.index') }}">Compliance</a>
-                <a class="nav-link {{ request()->is('compliance-v2*') ? 'active fw-semibold' : '' }}" href="{{ route('compliance_v2.index') }}">
-                    Compliance 2026+ <span class="badge bg-warning text-dark" style="font-size:.6rem">BARU</span>
+                <a class="nav-link {{ request()->is('compliance*') && !request()->is('compliance-v[23]*') ? 'active fw-semibold' : '' }}" href="{{ route('compliance.index') }}">Compliance</a>
+                <a class="nav-link {{ request()->is('compliance-v2*') ? 'active fw-semibold' : '' }}" href="{{ route('compliance_v2.index') }}">Compliance 2026+</a>
+                <a class="nav-link {{ request()->is('compliance-v3*') ? 'active fw-semibold' : '' }}" href="{{ route('compliance_v3.index') }}">
+                    Compliance Gabungan <span class="badge bg-primary" style="font-size:.6rem">V3</span>
                 </a>
             </div>
         </div>
@@ -28,7 +29,7 @@
 
     <footer class="bg-light py-4 mt-5">
         <div class="container text-center text-muted">
-            <p>&copy; 2025 Perpustakaan Nasional RI - SAKEDAP System</p>
+            <p>&copy; 2026 Perpustakaan Nasional RI - Made by Vincentia DK</p>
         </div>
     </footer>
 

@@ -6,8 +6,12 @@
     {{-- Header --}}
     <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
-            <h4 class="mb-0 fw-bold">Compliance KCKR 2026+</h4>
-            <small class="text-muted">Berbasis Tanggal Terbit di ISBN &mdash; Deadline: KC 20 Hari Kerja, KR 10 Hari Kerja</small>
+            <h4 class="mb-0 fw-bold">Compliance KCKR Gabungan</h4>
+            <small class="text-muted">
+                Pra-2026: berbasis Createdate &mdash;
+                2026+: berbasis Tanggal Terbit &mdash;
+                Kolom Terbit hanya terisi untuk judul 2026+
+            </small>
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-sm btn-success" onclick="doExport()">
@@ -25,7 +29,6 @@
         <div class="card-body py-2">
             <div class="row g-2 align-items-end">
 
-                {{-- Filter Tipe Tanggal --}}
                 <div class="col-auto">
                     <label class="form-label form-label-sm mb-1">Tipe Filter</label>
                     <select class="form-select form-select-sm" id="filterType" onchange="onFilterTypeChange()">
@@ -38,8 +41,8 @@
                 <div id="filterTahunWrap" class="col-auto">
                     <label class="form-label form-label-sm mb-1">Tahun</label>
                     <select class="form-select form-select-sm" id="filterYear">
-                        @for($y = 2026; $y <= 2030; $y++)
-                            <option value="{{ $y }}" {{ $y == 2026 ? 'selected' : '' }}>{{ $y }}</option>
+                        @for($y = 2030; $y >= 2015; $y--)
+                            <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
                         @endfor
                     </select>
                 </div>
@@ -62,7 +65,6 @@
                     <input type="date" class="form-control form-control-sm" id="endDate">
                 </div>
 
-                {{-- Provinsi --}}
                 <div class="col-md-2">
                     <label class="form-label form-label-sm mb-1">Provinsi</label>
                     <select class="form-select form-select-sm" id="provinceFilter" multiple size="1" style="height:31px">
@@ -72,7 +74,6 @@
                     </select>
                 </div>
 
-                {{-- Kategori --}}
                 <div class="col-auto">
                     <label class="form-label form-label-sm mb-1">Kategori</label>
                     <select class="form-select form-select-sm" id="filterKategori">
@@ -82,7 +83,6 @@
                     </select>
                 </div>
 
-                {{-- Hutang Terbit --}}
                 <div class="col-auto">
                     <label class="form-label form-label-sm mb-1">Hutang Terbit</label>
                     <select class="form-select form-select-sm" id="filterHutang">
@@ -92,7 +92,6 @@
                     </select>
                 </div>
 
-                {{-- Lewat Teguran --}}
                 <div class="col-auto">
                     <label class="form-label form-label-sm mb-1">Lewat Teguran</label>
                     <select class="form-select form-select-sm" id="filterTeguran">
@@ -102,7 +101,6 @@
                     </select>
                 </div>
 
-                {{-- Filter KCKR --}}
                 <div class="col-auto">
                     <label class="form-label form-label-sm mb-1">Status KCKR</label>
                     <select class="form-select form-select-sm" id="filterKckr">
@@ -112,7 +110,6 @@
                     </select>
                 </div>
 
-                {{-- Filter Rekomendasi --}}
                 <div class="col-auto">
                     <label class="form-label form-label-sm mb-1">Rekomendasi</label>
                     <select class="form-select form-select-sm" id="filterRekomendasi">
@@ -123,7 +120,6 @@
                     </select>
                 </div>
 
-                {{-- Filter % KCKR --}}
                 <div class="col-auto">
                     <label class="form-label form-label-sm mb-1">% KCKR</label>
                     <select class="form-select form-select-sm" id="filterPersentase">
@@ -136,7 +132,6 @@
                     </select>
                 </div>
 
-                {{-- Search --}}
                 <div class="col-md-2">
                     <label class="form-label form-label-sm mb-1">Cari Penerbit</label>
                     <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Nama penerbit...">
@@ -152,8 +147,6 @@
 
     {{-- Summary Cards --}}
     <div class="mb-3" id="summaryCards">
-
-        {{-- Baris atas: Penerbit + label grup --}}
         <div class="row g-2 mb-1 align-items-center">
             <div class="col-auto">
                 <div class="card border-0 shadow-sm text-center py-2 px-3 h-100">
@@ -163,16 +156,16 @@
             </div>
             <div class="col">
                 <div class="d-flex flex-column gap-1">
-                    {{-- Grup Status Terbit --}}
+                    {{-- Status Terbit (hanya 2026+) --}}
                     <div>
                         <div class="text-muted fw-semibold mb-1" style="font-size:.72rem;letter-spacing:.05em;text-transform:uppercase">
-                            📄 Status Terbit
+                            📄 Status Terbit <span class="badge bg-primary" style="font-size:.6rem">2026+</span>
                         </div>
                         <div class="row g-2">
                             <div class="col">
                                 <div class="card border-0 shadow-sm text-center py-2 border-top border-2 border-secondary">
-                                    <div class="fs-5 fw-bold text-secondary" id="sumJudul">-</div>
-                                    <small class="text-muted" style="font-size:.72rem">Total Judul</small>
+                                    <div class="fs-5 fw-bold text-secondary" id="sumJudul2026">-</div>
+                                    <small class="text-muted" style="font-size:.72rem">Total Judul 2026+</small>
                                 </div>
                             </div>
                             <div class="col">
@@ -202,10 +195,10 @@
                         </div>
                     </div>
 
-                    {{-- Grup Status KCKR --}}
+                    {{-- Status KCKR (semua tahun) --}}
                     <div>
                         <div class="text-muted fw-semibold mb-1" style="font-size:.72rem;letter-spacing:.05em;text-transform:uppercase">
-                            ✅ Status KCKR
+                            ✅ Status KCKR <span class="badge bg-secondary" style="font-size:.6rem">Semua Tahun</span>
                         </div>
                         <div class="row g-2">
                             <div class="col">
@@ -243,15 +236,12 @@
 
     {{-- Tabel --}}
     <div class="card shadow-sm">
-        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Data Penerbit</h5>
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Data Penerbit (Gabungan)</h5>
             <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-white text-success" id="totalBadge"></span>
+                <span class="badge bg-white text-primary" id="totalBadge"></span>
                 <button class="btn btn-sm btn-light" onclick="doExport(0)" title="Export ringkasan penerbit (Excel)">
                     <i class="bi bi-file-earmark-excel"></i> Excel
-                </button>
-                <button class="btn btn-sm btn-outline-light" onclick="doExport(1)" title="Export lengkap dengan detail judul (Excel)">
-                    <i class="bi bi-list-ul"></i> Excel+Judul
                 </button>
             </div>
         </div>
@@ -260,15 +250,21 @@
                 <table class="table table-hover table-sm mb-0 align-middle" style="font-size:.82rem">
                     <thead id="tableHead" class="table-light">
                         <tr>
-                            <th rowspan="2" class="sortable text-center align-middle" data-col="NAME">#</th>
+                            <th rowspan="2" class="text-center align-middle">#</th>
                             <th rowspan="2" class="sortable align-middle" data-col="NAME">Nama Penerbit</th>
                             <th rowspan="2" class="align-middle">Kategori</th>
                             <th rowspan="2" class="align-middle">Kota</th>
                             <th rowspan="2" class="sortable text-center align-middle" data-col="TOTAL_JUDUL">Total Judul</th>
-                            <th colspan="2" class="text-center border-start">Status Terbit</th>
-                            <th colspan="2" class="text-center border-start">Keterlambatan Terbit</th>
-                            <th colspan="3" class="text-center border-start bg-success bg-opacity-25 sortable" data-col="SUDAH_KCKR">Sudah KCKR</th>
-                            <th colspan="4" class="text-center border-start bg-warning bg-opacity-25 sortable" data-col="BELUM_KCKR">Belum KCKR</th>
+                            <th colspan="2" class="text-center border-start">
+                                Status Terbit
+                                <small class="badge bg-primary ms-1" style="font-size:.55rem;font-weight:normal">2026+</small>
+                            </th>
+                            <th colspan="2" class="text-center border-start">
+                                Keterlambatan Terbit
+                                <small class="badge bg-primary ms-1" style="font-size:.55rem;font-weight:normal">2026+</small>
+                            </th>
+                            <th colspan="3" class="text-center border-start bg-success bg-opacity-25">Sudah KCKR</th>
+                            <th colspan="4" class="text-center border-start bg-warning bg-opacity-25">Belum KCKR</th>
                             <th rowspan="2" class="text-center align-middle border-start sortable" data-col="PERSENTASE_KCKR">% KCKR</th>
                             <th rowspan="2" class="text-center align-middle">Rekomendasi</th>
                             <th rowspan="2" class="text-center align-middle">Aksi</th>
@@ -310,7 +306,7 @@
             </div>
             <div class="modal-body">
                 <div class="progress mb-2" style="height:8px">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
                          id="exportProgress" style="width:0%"></div>
                 </div>
                 <small class="text-muted" id="exportStatus">Memproses data...</small>
@@ -321,7 +317,7 @@
 
 <style>
 .sortable { cursor: pointer; user-select: none; }
-.sortable:hover { background: rgba(255,255,255,.15); }
+.sortable:hover { background: rgba(0,0,0,.05); }
 th.sorted-asc::after  { content: ' ▲'; font-size:.65rem; }
 th.sorted-desc::after { content: ' ▼'; font-size:.65rem; }
 </style>
@@ -355,13 +351,13 @@ function buildParams(page = 1) {
     const prov = [...document.getElementById('provinceFilter').selectedOptions].map(o => o.value);
     prov.forEach(v => params.append('province_ids[]', v));
     const v = (id) => document.getElementById(id).value;
-    if (v('filterKategori'))   params.set('kategori',       v('filterKategori'));
-    if (v('filterHutang'))     params.set('filter_hutang',  v('filterHutang'));
-    if (v('filterTeguran'))      params.set('filter_teguran',    v('filterTeguran'));
-    if (v('filterKckr'))         params.set('filter_kckr',       v('filterKckr'));
-    if (v('filterRekomendasi'))  params.set('filter_rekomendasi', v('filterRekomendasi'));
-    if (v('filterPersentase'))   params.set('persentase',         v('filterPersentase'));
-    if (v('searchInput'))      params.set('search',         v('searchInput'));
+    if (v('filterKategori'))    params.set('kategori',            v('filterKategori'));
+    if (v('filterHutang'))      params.set('filter_hutang',       v('filterHutang'));
+    if (v('filterTeguran'))     params.set('filter_teguran',      v('filterTeguran'));
+    if (v('filterKckr'))        params.set('filter_kckr',         v('filterKckr'));
+    if (v('filterRekomendasi')) params.set('filter_rekomendasi',  v('filterRekomendasi'));
+    if (v('filterPersentase'))  params.set('persentase',          v('filterPersentase'));
+    if (v('searchInput'))       params.set('search',              v('searchInput'));
     return params;
 }
 
@@ -370,7 +366,7 @@ function loadData(page = 1) {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '<tr><td colspan="20" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Memuat...</td></tr>';
 
-    fetch('{{ route("compliance_v2.data") }}?' + buildParams(page))
+    fetch('{{ route("compliance_v3.data") }}?' + buildParams(page))
         .then(r => r.json())
         .then(res => {
             if (res.error) { tbody.innerHTML = `<tr><td colspan="20" class="text-center text-danger">${res.error}</td></tr>`; return; }
@@ -381,6 +377,8 @@ function loadData(page = 1) {
         .catch(() => tbody.innerHTML = '<tr><td colspan="20" class="text-center text-danger">Gagal memuat data.</td></tr>');
 }
 
+function dash(v) { return (v === undefined || v === null || v === '') ? '-' : v; }
+
 function renderTable(res) {
     const tbody = document.getElementById('tableBody');
     if (!res.data.length) {
@@ -389,14 +387,20 @@ function renderTable(res) {
     }
     let no = (res.current_page - 1) * res.per_page + 1;
     tbody.innerHTML = res.data.map(r => {
-        const hutangBadge  = r.HUTANG_TERBIT  > 0 ? `<span class="badge bg-warning text-dark">${r.HUTANG_TERBIT}</span>`  : `<span class="text-muted">0</span>`;
-        const teguranBadge = r.LEWAT_TEGURAN  > 0 ? `<span class="badge bg-danger">${r.LEWAT_TEGURAN}</span>`             : `<span class="text-muted">0</span>`;
-        const judulTerbit  = parseInt(r.JUDUL_TERBIT || 0);
+        const has2026      = parseInt(r.JUDUL_2026_PLUS || 0) > 0;
+        const terbitCell   = has2026 ? `<span class="text-success fw-semibold">${r.JUDUL_TERBIT}</span>` : `<span class="text-muted">-</span>`;
+        const belumTerbit  = has2026 ? `<span class="text-muted">${r.JUDUL_BELUM_TERBIT}</span>` : `<span class="text-muted">-</span>`;
+        const hutangBadge  = has2026
+            ? (r.HUTANG_TERBIT  > 0 ? `<span class="badge bg-warning text-dark">${r.HUTANG_TERBIT}</span>` : `<span class="text-muted">0</span>`)
+            : `<span class="text-muted">-</span>`;
+        const teguranBadge = has2026
+            ? (r.LEWAT_TEGURAN  > 0 ? `<span class="badge bg-danger">${r.LEWAT_TEGURAN}</span>` : `<span class="text-muted">0</span>`)
+            : `<span class="text-muted">-</span>`;
+
         const pct          = parseFloat(r.PERSENTASE_KCKR || 0);
         const pctColor     = pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'danger';
-        const pctBadge     = judulTerbit === 0
-            ? `<span class="badge bg-secondary">-</span>`
-            : `<span class="badge bg-${pctColor}">${pct}%</span>`;
+        const pctBadge     = `<span class="badge bg-${pctColor}">${pct}%</span>`;
+
         const teguran      = parseInt(r.LEWAT_TEGURAN || 0);
         const terlambatKckr = parseInt(r.TERLAMBAT_KCKR || 0);
         const rekBadge     = teguran > 0
@@ -404,15 +408,16 @@ function renderTable(res) {
             : (terlambatKckr > 0 && pct <= 20)
             ? `<span class="badge" style="background:#fd7e14">Blokir SS KCKR</span>`
             : `<span class="badge bg-success">Baik</span>`;
-        const detailUrl    = `{{ url('/compliance-v2/detail') }}/${r.ID}?` + buildParams().toString();
+
+        const detailUrl = `{{ url('/compliance-v3/detail') }}/${r.ID}?` + buildParams().toString();
         return `<tr>
             <td class="text-muted text-center">${no++}</td>
             <td><a href="${detailUrl}" class="text-decoration-none fw-semibold">${r.NAME}</a></td>
             <td><span class="badge bg-secondary">${r.KATEGORI}</span></td>
             <td>${r.CITY || '-'}</td>
             <td class="text-center">${r.TOTAL_JUDUL}</td>
-            <td class="text-center text-success fw-semibold">${r.JUDUL_TERBIT}</td>
-            <td class="text-center text-muted">${r.JUDUL_BELUM_TERBIT}</td>
+            <td class="text-center">${terbitCell}</td>
+            <td class="text-center">${belumTerbit}</td>
             <td class="text-center">${hutangBadge}</td>
             <td class="text-center">${teguranBadge}</td>
             <td class="text-center text-info fw-semibold">${r.SUDAH_KCKR}</td>
@@ -434,7 +439,8 @@ function updateSummary(res) {
     const fmt = v => (parseInt(v) || 0).toLocaleString('id');
     document.getElementById('sumPenerbit').textContent    = res.total;
     document.getElementById('totalBadge').textContent     = res.total + ' penerbit ditemukan';
-    document.getElementById('sumJudul').textContent       = fmt(a.SUM_JUDUL);
+    // Total judul 2026+ = sudah terbit + belum terbit (exclude semua tahun lama)
+    document.getElementById('sumJudul2026').textContent   = fmt((parseInt(a.SUM_TERBIT)||0) + (parseInt(a.SUM_BELUM_TERBIT)||0));
     document.getElementById('sumTerbit').textContent      = fmt(a.SUM_TERBIT);
     document.getElementById('sumBelumTerbit').textContent = fmt(a.SUM_BELUM_TERBIT);
     document.getElementById('sumHutang').textContent      = fmt(a.SUM_HUTANG);
@@ -464,10 +470,10 @@ function renderPagination(res) {
     el.innerHTML = html;
 }
 
-// Sorting
 document.querySelectorAll('th.sortable').forEach(th => {
     th.addEventListener('click', () => {
         const col = th.dataset.col;
+        if (!col) return;
         if (currentSort === col) currentDir = currentDir === 'ASC' ? 'DESC' : 'ASC';
         else { currentSort = col; currentDir = 'ASC'; }
         document.querySelectorAll('th').forEach(t => t.classList.remove('sorted-asc','sorted-desc'));
@@ -476,14 +482,13 @@ document.querySelectorAll('th.sortable').forEach(th => {
     });
 });
 
-// Export
 function doExport(withDetail = 0) {
     const token   = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
     const params  = buildParams(1);
     params.delete('page'); params.delete('sort_col'); params.delete('sort_dir');
     params.set('download_token', token);
     params.set('with_detail', withDetail);
-    const url     = '{{ route("compliance_v2.export") }}?' + params.toString();
+    const url     = '{{ route("compliance_v3.export") }}?' + params.toString();
     const modal   = new bootstrap.Modal(document.getElementById('exportModal'));
     const bar     = document.getElementById('exportProgress');
     const status  = document.getElementById('exportStatus');
@@ -506,20 +511,19 @@ function doExport(withDetail = 0) {
 }
 
 function resetFilter() {
-    document.getElementById('filterType').value     = 'tahun';
-    document.getElementById('filterYear').value     = '2026';
-    document.getElementById('filterKategori').value = '';
-    document.getElementById('filterHutang').value   = '';
+    document.getElementById('filterType').value        = 'tahun';
+    document.getElementById('filterYear').value        = '{{ date("Y") }}';
+    document.getElementById('filterKategori').value    = '';
+    document.getElementById('filterHutang').value      = '';
     document.getElementById('filterTeguran').value     = '';
     document.getElementById('filterKckr').value        = '';
     document.getElementById('filterRekomendasi').value = '';
     document.getElementById('filterPersentase').value  = '';
-    document.getElementById('searchInput').value      = '';
+    document.getElementById('searchInput').value       = '';
     [...document.getElementById('provinceFilter').options].forEach(o => o.selected = false);
     onFilterTypeChange();
 }
 
-// Enter key di search
 document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') loadData(1); });
 </script>
 @endsection

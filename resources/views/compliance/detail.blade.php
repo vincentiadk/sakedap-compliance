@@ -134,120 +134,108 @@ body { background-color: #f8f9fa; }
         </div>
     </div>
 
-    {{-- Filter pencarian judul --}}
+    {{-- Filter --}}
+    @php
+        $dMin = $dateFilter['start'];
+        $dMax = date('Y-m-d', strtotime($dateFilter['end'] . ' -1 day'));
+        $resetUrl = request()->url() . '?' . http_build_query(array_filter([
+            'filter_type'  => $dateFilter['type'],
+            'filter_year'  => request('filter_year'),
+            'filter_month' => request('filter_month'),
+            'start_date'   => request('start_date'),
+            'end_date'     => request('end_date'),
+        ]));
+    @endphp
     <div class="card shadow-sm mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center" style="cursor:pointer" onclick="toggleDetailFilter()">
-            <span class="fw-bold"><i class="fas fa-search me-2"></i>Filter</span>
-            <i class="fas fa-chevron-down" id="detailFilterChevron"></i>
-        </div>
-        <div id="detailFilterBody" style="display:none">
-            <div class="card-body">
-                <form method="GET" action="{{ request()->url() }}">
-                    {{-- Teruskan date filter params sebagai hidden --}}
-                    <input type="hidden" name="filter_type"  value="{{ $dateFilter['type'] }}">
-                    @if($dateFilter['type'] === 'tahun')
-                        <input type="hidden" name="filter_year"  value="{{ request('filter_year', 2026) }}">
-                    @elseif($dateFilter['type'] === 'bulan')
-                        <input type="hidden" name="filter_year"  value="{{ request('filter_year', 2026) }}">
-                        <input type="hidden" name="filter_month" value="{{ request('filter_month', 1) }}">
-                    @else
-                        <input type="hidden" name="start_date" value="{{ request('start_date') }}">
-                        <input type="hidden" name="end_date"   value="{{ request('end_date') }}">
-                    @endif
+        <div class="card-body py-2">
+            <form method="GET" action="{{ request()->url() }}" class="row g-2 align-items-end flex-wrap">
+                <input type="hidden" name="filter_type" value="{{ $dateFilter['type'] }}">
+                @if($dateFilter['type'] === 'tahun')
+                    <input type="hidden" name="filter_year"  value="{{ request('filter_year') }}">
+                @elseif($dateFilter['type'] === 'bulan')
+                    <input type="hidden" name="filter_year"  value="{{ request('filter_year') }}">
+                    <input type="hidden" name="filter_month" value="{{ request('filter_month') }}">
+                @else
+                    <input type="hidden" name="start_date" value="{{ request('start_date') }}">
+                    <input type="hidden" name="end_date"   value="{{ request('end_date') }}">
+                @endif
 
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold" style="font-size:.85rem">Judul</label>
-                            <input type="text" name="search_judul" class="form-control form-control-sm"
-                                value="{{ $filters['searchJudul'] }}" placeholder="Cari judul...">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold" style="font-size:.85rem">ISBN</label>
-                            <input type="text" name="search_isbn" class="form-control form-control-sm"
-                                value="{{ $filters['searchIsbn'] }}" placeholder="Cari ISBN...">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold" style="font-size:.85rem">Pengarang</label>
-                            <input type="text" name="search_pengarang" class="form-control form-control-sm"
-                                value="{{ $filters['searchPengarang'] }}" placeholder="Cari pengarang...">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold" style="font-size:.85rem">Jilid</label>
-                            <input type="text" name="search_jilid" class="form-control form-control-sm"
-                                value="{{ $filters['searchJilid'] }}" placeholder="Cari jilid...">
-                        </div>
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Jenis</label>
+                    <select name="filter_jenis" class="form-select form-select-sm">
+                        <option value="">Semua</option>
+                        <option value="cetak" {{ $filters['filterJenis']==='cetak' ? 'selected':'' }}>Cetak</option>
+                        <option value="rekam" {{ $filters['filterJenis']==='rekam' ? 'selected':'' }}>Rekam</option>
+                    </select>
+                </div>
 
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold" style="font-size:.85rem">Jenis</label>
-                            <select name="filter_jenis" class="form-select form-select-sm">
-                                <option value="">-- Semua --</option>
-                                <option value="cetak" {{ $filters['filterJenis'] === 'cetak' ? 'selected' : '' }}>📄 Cetak</option>
-                                <option value="rekam" {{ $filters['filterJenis'] === 'rekam' ? 'selected' : '' }}>🎬 Rekam</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold" style="font-size:.85rem">Status KCKR</label>
-                            <select name="filter_status" class="form-select form-select-sm">
-                                <option value="">-- Semua --</option>
-                                <option value="sudah" {{ $filters['filterStatus'] === 'sudah' ? 'selected' : '' }}>✅ Sudah</option>
-                                <option value="belum" {{ $filters['filterStatus'] === 'belum' ? 'selected' : '' }}>⏳ Belum</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold" style="font-size:.85rem">Terlambat</label>
-                            <select name="filter_terlambat" class="form-select form-select-sm">
-                                <option value="">-- Semua --</option>
-                                <option value="ya"    {{ $filters['filterTerlambat'] === 'ya'    ? 'selected' : '' }}>⚠️ Ya</option>
-                                <option value="tidak" {{ $filters['filterTerlambat'] === 'tidak' ? 'selected' : '' }}>✓ Tidak</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            @php
-                                $dMin = $dateFilter['start'];
-                                $dMax = date('Y-m-d', strtotime($dateFilter['end'] . ' -1 day'));
-                            @endphp
-                            <label class="form-label fw-bold" style="font-size:.85rem">
-                                Tgl Daftar
-                                <small class="text-muted fw-normal">({{ $dMin }} s/d {{ $dMax }})</small>
-                            </label>
-                            <div class="input-group input-group-sm">
-                                <input type="date" name="tgl_daftar_start" class="form-control"
-                                    min="{{ $dMin }}" max="{{ $dMax }}"
-                                    value="{{ $filters['tglDaftarStart'] ?: $dMin }}">
-                                <span class="input-group-text">–</span>
-                                <input type="date" name="tgl_daftar_end" class="form-control"
-                                    min="{{ $dMin }}" max="{{ $dMax }}"
-                                    value="{{ $filters['tglDaftarEnd'] ?: $dMax }}">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold" style="font-size:.85rem">Tgl KCKR</label>
-                            <div class="input-group input-group-sm">
-                                <input type="date" name="tgl_kckr_start" class="form-control"
-                                    value="{{ $filters['tglKckrStart'] }}">
-                                <span class="input-group-text">–</span>
-                                <input type="date" name="tgl_kckr_end" class="form-control"
-                                    value="{{ $filters['tglKckrEnd'] }}">
-                            </div>
-                        </div>
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Status KCKR</label>
+                    <select name="filter_status" class="form-select form-select-sm">
+                        <option value="">Semua</option>
+                        <option value="sudah" {{ $filters['filterStatus']==='sudah' ? 'selected':'' }}>Sudah</option>
+                        <option value="belum" {{ $filters['filterStatus']==='belum' ? 'selected':'' }}>Belum</option>
+                    </select>
+                </div>
+
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Terlambat</label>
+                    <select name="filter_terlambat" class="form-select form-select-sm">
+                        <option value="">Semua</option>
+                        <option value="ya"    {{ $filters['filterTerlambat']==='ya'    ? 'selected':'' }}>Ya</option>
+                        <option value="tidak" {{ $filters['filterTerlambat']==='tidak' ? 'selected':'' }}>Tidak</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-1">Judul</label>
+                    <input type="text" name="search_judul" class="form-control form-control-sm"
+                        value="{{ $filters['searchJudul'] }}" placeholder="Cari judul...">
+                </div>
+
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">ISBN</label>
+                    <input type="text" name="search_isbn" class="form-control form-control-sm"
+                        value="{{ $filters['searchIsbn'] }}" placeholder="No ISBN...">
+                </div>
+
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Pengarang</label>
+                    <input type="text" name="search_pengarang" class="form-control form-control-sm"
+                        value="{{ $filters['searchPengarang'] }}" placeholder="Pengarang...">
+                </div>
+
+                {{-- Tgl Daftar --}}
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Tgl Daftar</label>
+                    <div class="input-group input-group-sm">
+                        <input type="date" name="tgl_daftar_start" class="form-control"
+                            min="{{ $dMin }}" max="{{ $dMax }}"
+                            value="{{ $filters['tglDaftarStart'] ?: $dMin }}" style="max-width:130px">
+                        <span class="input-group-text px-1">–</span>
+                        <input type="date" name="tgl_daftar_end" class="form-control"
+                            min="{{ $dMin }}" max="{{ $dMax }}"
+                            value="{{ $filters['tglDaftarEnd'] ?: $dMax }}" style="max-width:130px">
                     </div>
+                </div>
 
-                    <div class="mt-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="fas fa-search"></i> Cari
-                        </button>
-                        <a href="{{ request()->url() }}?{{ http_build_query(array_filter([
-                            'filter_type'  => $dateFilter['type'],
-                            'filter_year'  => request('filter_year'),
-                            'filter_month' => request('filter_month'),
-                            'start_date'   => request('start_date'),
-                            'end_date'     => request('end_date'),
-                        ])) }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-redo"></i> Reset
-                        </a>
+                {{-- Tgl KCKR --}}
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Tgl KCKR</label>
+                    <div class="input-group input-group-sm">
+                        <input type="date" name="tgl_kckr_start" class="form-control"
+                            value="{{ $filters['tglKckrStart'] }}" style="max-width:130px">
+                        <span class="input-group-text px-1">–</span>
+                        <input type="date" name="tgl_kckr_end" class="form-control"
+                            value="{{ $filters['tglKckrEnd'] }}" style="max-width:130px">
                     </div>
-                </form>
-            </div>
+                </div>
+
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary btn-sm mt-3">Filter</button>
+                    <a href="{{ $resetUrl }}" class="btn btn-outline-secondary btn-sm mt-3">Reset</a>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -305,9 +293,9 @@ body { background-color: #f8f9fa; }
                         <td><small class="text-muted">{{ $row->KETERANGAN ?? '-' }}</small></td>
                         <td class="text-center">
                             @if($isCetak)
-                                <span class="badge badge-cetak">📄 Cetak</span>
+                                <span class="badge badge-cetak">Cetak</span>
                             @else
-                                <span class="badge badge-rekam">🎬 Rekam</span>
+                                <span class="badge badge-rekam">Rekam</span>
                             @endif
                         </td>
                         <td class="text-center">
@@ -323,16 +311,16 @@ body { background-color: #f8f9fa; }
                         </td>
                         <td class="text-center">
                             @if($isKckr)
-                                <span class="badge bg-success">✅ Sudah</span>
+                                <span class="badge bg-success">Sudah</span>
                             @else
-                                <span class="badge bg-warning text-dark">⏳ Belum</span>
+                                <span class="badge bg-warning text-dark">Belum</span>
                             @endif
                         </td>
                         <td class="text-center">
                             @if($isTerlambat)
-                                <span class="badge bg-danger">⚠️ Ya</span>
+                                <span class="badge bg-danger">Ya</span>
                             @else
-                                <span class="badge bg-success">✓ Tidak</span>
+                                <span class="badge bg-success">Tidak</span>
                             @endif
                         </td>
                     </tr>
@@ -452,9 +440,10 @@ function doDetailExport() {
     setTimeout(() => { clearInterval(animInt); clearInterval(pollInt); modal.hide(); }, 300000);
 }
 
-function toggleDetailFilter() {
+function toggleDetailFilter() { // kept for compatibility
     const body    = document.getElementById('detailFilterBody');
     const chevron = document.getElementById('detailFilterChevron');
+    if (!body) return;
     const isOpen  = body.style.display !== 'none';
     body.style.display = isOpen ? 'none' : '';
     chevron.className  = isOpen ? 'fas fa-chevron-down' : 'fas fa-chevron-up';

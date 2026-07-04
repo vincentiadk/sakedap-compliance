@@ -16,6 +16,7 @@
                         @if($penerbit->NOSIUP)
                             <span class="badge bg-light text-dark border">No. SIUP: {{ $penerbit->NOSIUP }}</span>
                         @endif
+                        <span class="badge bg-primary">Compliance Gabungan</span>
                     </div>
                 </div>
                 <button class="btn btn-sm btn-success flex-shrink-0" onclick="doExport()">
@@ -23,9 +24,7 @@
                 </button>
             </div>
 
-            {{-- Info kontak dalam grid --}}
             <div class="row g-2" style="font-size:.82rem">
-                {{-- Alamat --}}
                 <div class="col-md-4">
                     <div class="d-flex gap-2">
                         <i class="bi bi-geo-alt-fill text-danger mt-1 flex-shrink-0"></i>
@@ -40,7 +39,6 @@
                     </div>
                 </div>
 
-                {{-- Kontak 1 --}}
                 @if($penerbit->KONTAK1 || $penerbit->TELP1 || $penerbit->EMAIL1)
                 <div class="col-md-3">
                     <div class="d-flex gap-2">
@@ -53,9 +51,6 @@
                                     <a href="tel:{{ $penerbit->TELP1 }}" class="text-decoration-none text-dark">{{ $penerbit->TELP1 }}</a>
                                 </div>
                             @endif
-                            @if($penerbit->FAX1)
-                                <div class="text-muted"><i class="bi bi-printer-fill" style="font-size:.7rem"></i> {{ $penerbit->FAX1 }}</div>
-                            @endif
                             @if($penerbit->EMAIL1)
                                 <div><i class="bi bi-envelope-fill text-muted" style="font-size:.7rem"></i>
                                     <a href="mailto:{{ $penerbit->EMAIL1 }}" class="text-decoration-none">{{ $penerbit->EMAIL1 }}</a>
@@ -66,33 +61,6 @@
                 </div>
                 @endif
 
-                {{-- Kontak 2 --}}
-                @if($penerbit->KONTAK2 || $penerbit->TELP2 || $penerbit->EMAIL2)
-                <div class="col-md-3">
-                    <div class="d-flex gap-2">
-                        <i class="bi bi-person-lines-fill text-secondary mt-1 flex-shrink-0"></i>
-                        <div>
-                            <div class="text-muted" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em">Narahubung 2</div>
-                            @if($penerbit->KONTAK2) <div class="fw-semibold">{{ $penerbit->KONTAK2 }}</div> @endif
-                            @if($penerbit->TELP2)
-                                <div><i class="bi bi-telephone-fill text-muted" style="font-size:.7rem"></i>
-                                    <a href="tel:{{ $penerbit->TELP2 }}" class="text-decoration-none text-dark">{{ $penerbit->TELP2 }}</a>
-                                </div>
-                            @endif
-                            @if($penerbit->FAX2)
-                                <div class="text-muted"><i class="bi bi-printer-fill" style="font-size:.7rem"></i> {{ $penerbit->FAX2 }}</div>
-                            @endif
-                            @if($penerbit->EMAIL2)
-                                <div><i class="bi bi-envelope-fill text-muted" style="font-size:.7rem"></i>
-                                    <a href="mailto:{{ $penerbit->EMAIL2 }}" class="text-decoration-none">{{ $penerbit->EMAIL2 }}</a>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-                @endif
-
-                {{-- Website --}}
                 @if($penerbit->WEBSITE)
                 <div class="col-md-2">
                     <div class="d-flex gap-2">
@@ -115,26 +83,23 @@
     {{-- Summary Cards --}}
     @if($summary)
     <div class="mb-3">
-        {{-- Keterangan scope --}}
         <div class="alert alert-light border py-1 px-3 mb-2 d-inline-flex align-items-center gap-2" style="font-size:.78rem">
             <i class="bi bi-info-circle text-primary"></i>
-            Ringkasan di bawah menampilkan <strong>total keseluruhan {{ request('filter_year', 2026) }}</strong> — tidak terpengaruh filter tabel.
-            @if(request('filter_status') || request('filter_jenis') || request('filter_hutang') || request('filter_teguran') || request('filter_terlambat'))
-                &nbsp;<span class="badge bg-warning text-dark">Filter tabel aktif</span>
-            @endif
+            Ringkasan keseluruhan — tidak terpengaruh filter tabel.
+            Status Terbit hanya dari data 2026+. KCKR dari semua tahun.
         </div>
 
         <div class="d-flex align-items-stretch gap-0 flex-wrap">
 
-            {{-- Grup Status Terbit --}}
+            {{-- Terbit (2026+) --}}
             <div class="d-flex align-items-center gap-1 pe-3 me-1">
-                <div class="text-muted fw-semibold me-2" style="font-size:.65rem;letter-spacing:.05em;text-transform:uppercase;writing-mode:vertical-rl;transform:rotate(180deg)">📄 Terbit</div>
+                <div class="text-muted fw-semibold me-2" style="font-size:.65rem;letter-spacing:.05em;text-transform:uppercase;writing-mode:vertical-rl;transform:rotate(180deg)">📄 Terbit 2026+</div>
                 @foreach([
-                    ['val' => $summary->TOTAL,        'label' => 'Total Judul',   'color' => '#6c757d'],
-                    ['val' => $summary->SUDAH_TERBIT, 'label' => 'Sudah Terbit',  'color' => '#198754'],
-                    ['val' => $summary->BELUM_TERBIT, 'label' => 'Belum Terbit',  'color' => '#adb5bd'],
-                    ['val' => $summary->HUTANG_TERBIT,'label' => 'Hutang Terbit', 'color' => '#ffc107'],
-                    ['val' => $summary->LEWAT_TEGURAN,'label' => 'Lewat Teguran', 'color' => '#dc3545'],
+                    ['val' => $summary->TOTAL,         'label' => 'Total Judul',   'color' => '#6c757d'],
+                    ['val' => $summary->SUDAH_TERBIT,  'label' => 'Sudah Terbit',  'color' => '#198754'],
+                    ['val' => $summary->BELUM_TERBIT,  'label' => 'Belum Terbit',  'color' => '#adb5bd'],
+                    ['val' => $summary->HUTANG_TERBIT, 'label' => 'Hutang Terbit', 'color' => '#ffc107'],
+                    ['val' => $summary->LEWAT_TEGURAN, 'label' => 'Lewat Teguran', 'color' => '#dc3545'],
                 ] as $card)
                 <div class="text-center px-3 py-2 bg-white rounded shadow-sm border-top border-2" style="min-width:90px;border-color:{{ $card['color'] }}!important">
                     <div class="fs-5 fw-bold" style="color:{{ $card['color'] }}">{{ $card['val'] }}</div>
@@ -143,16 +108,15 @@
                 @endforeach
             </div>
 
-            {{-- Divider --}}
             <div class="vr mx-2 opacity-25"></div>
 
-            {{-- Grup Status KCKR --}}
+            {{-- KCKR (semua tahun) --}}
             <div class="d-flex align-items-center gap-1 ps-2">
-                <div class="text-muted fw-semibold me-2" style="font-size:.65rem;letter-spacing:.05em;text-transform:uppercase;writing-mode:vertical-rl;transform:rotate(180deg)">✅ KCKR</div>
+                <div class="text-muted fw-semibold me-2" style="font-size:.65rem;letter-spacing:.05em;text-transform:uppercase;writing-mode:vertical-rl;transform:rotate(180deg)">✅ KCKR Semua</div>
                 @foreach([
-                    ['val' => $summary->SUDAH_KCKR,        'label' => 'Sudah KCKR',    'color' => '#0dcaf0'],
-                    ['val' => $summary->BELUM_KCKR ?? 0,  'label' => 'Tagihan KCKR',  'color' => '#fd7e14'],
-                    ['val' => ($summary->TERLAMBAT_KCKR ?? 0), 'label' => 'Terlambat KCKR', 'color' => '#dc3545'],
+                    ['val' => $summary->SUDAH_KCKR,         'label' => 'Sudah KCKR',      'color' => '#0dcaf0'],
+                    ['val' => $summary->BELUM_KCKR ?? 0,    'label' => 'Tagihan KCKR',    'color' => '#fd7e14'],
+                    ['val' => $summary->TERLAMBAT_KCKR ?? 0,'label' => 'Terlambat KCKR',  'color' => '#dc3545'],
                 ] as $card)
                 <div class="text-center px-3 py-2 bg-white rounded shadow-sm border-top border-2" style="min-width:90px;border-color:{{ $card['color'] }}!important">
                     <div class="fs-5 fw-bold" style="color:{{ $card['color'] }}">{{ $card['val'] }}</div>
@@ -176,12 +140,12 @@
     {{-- Filter --}}
     <div class="card shadow-sm mb-3">
         <div class="card-body py-2">
-            <form method="GET" action="{{ route('compliance_v2.detail', $penerbit->ID) }}" class="row g-2 align-items-end">
+            <form method="GET" action="{{ route('compliance_v3.detail', $penerbit->ID) }}" class="row g-2 align-items-end">
                 <input type="hidden" name="filter_type"  value="{{ $dateFilter['type'] }}">
                 @if($dateFilter['type'] === 'tahun')
-                    <input type="hidden" name="filter_year" value="{{ request('filter_year', 2026) }}">
+                    <input type="hidden" name="filter_year" value="{{ request('filter_year', date('Y')) }}">
                 @elseif($dateFilter['type'] === 'bulan')
-                    <input type="hidden" name="filter_year"  value="{{ request('filter_year',  2026) }}">
+                    <input type="hidden" name="filter_year"  value="{{ request('filter_year',  date('Y')) }}">
                     <input type="hidden" name="filter_month" value="{{ request('filter_month', 1) }}">
                 @else
                     <input type="hidden" name="start_date" value="{{ request('start_date') }}">
@@ -192,8 +156,8 @@
                     <label class="form-label form-label-sm mb-1">Status</label>
                     <select class="form-select form-select-sm" name="filter_status">
                         <option value="">Semua</option>
-                        <option value="terbit"       {{ $filters['filterStatus']==='terbit'       ? 'selected' : '' }}>Sudah Terbit</option>
-                        <option value="belum_terbit" {{ $filters['filterStatus']==='belum_terbit' ? 'selected' : '' }}>Belum Terbit</option>
+                        <option value="terbit"       {{ $filters['filterStatus']==='terbit'       ? 'selected' : '' }}>Sudah Terbit (2026+)</option>
+                        <option value="belum_terbit" {{ $filters['filterStatus']==='belum_terbit' ? 'selected' : '' }}>Belum Terbit (2026+)</option>
                         <option value="sudah_kckr"   {{ $filters['filterStatus']==='sudah_kckr'   ? 'selected' : '' }}>Sudah KCKR</option>
                         <option value="belum_kckr"   {{ $filters['filterStatus']==='belum_kckr'   ? 'selected' : '' }}>Belum KCKR</option>
                     </select>
@@ -210,14 +174,14 @@
                     <label class="form-label form-label-sm mb-1">Hutang Terbit</label>
                     <select class="form-select form-select-sm" name="filter_hutang">
                         <option value="">Semua</option>
-                        <option value="ya" {{ $filters['filterHutang']==='ya' ? 'selected' : '' }}>Ada Hutang</option>
+                        <option value="ya" {{ $filters['filterHutang']==='ya' ? 'selected' : '' }}>Ada Hutang (2026+)</option>
                     </select>
                 </div>
                 <div class="col-auto">
                     <label class="form-label form-label-sm mb-1">Lewat Teguran</label>
                     <select class="form-select form-select-sm" name="filter_teguran">
                         <option value="">Semua</option>
-                        <option value="ya" {{ $filters['filterTeguran']==='ya' ? 'selected' : '' }}>Lewat Teguran</option>
+                        <option value="ya" {{ $filters['filterTeguran']==='ya' ? 'selected' : '' }}>Lewat Teguran (2026+)</option>
                     </select>
                 </div>
                 <div class="col-auto">
@@ -239,7 +203,7 @@
                 </div>
                 <div class="col-auto">
                     <button type="submit" class="btn btn-primary btn-sm mt-3">Filter</button>
-                    <a href="{{ route('compliance_v2.detail', $penerbit->ID) }}?filter_type={{ $dateFilter['type'] }}&filter_year={{ request('filter_year',2026) }}"
+                    <a href="{{ route('compliance_v3.detail', $penerbit->ID) }}?filter_type={{ $dateFilter['type'] }}&filter_year={{ request('filter_year', date('Y')) }}"
                        class="btn btn-outline-secondary btn-sm mt-3">Reset</a>
                 </div>
             </form>
@@ -273,7 +237,8 @@
                     <tbody>
                         @forelse($titles as $i => $row)
                         @php
-                            $statusTerbitColor = match($row->STATUS_TERBIT) {
+                            $isPre26 = (bool) ($row->IS_PRE2026 ?? false);
+                            $statusTerbitColor = $isPre26 ? 'secondary' : match($row->STATUS_TERBIT) {
                                 'Terbit'        => 'success',
                                 'Hutang Terbit' => 'warning',
                                 'Lewat Teguran' => 'danger',
@@ -284,9 +249,9 @@
                                 'Belum Terbit' => 'secondary',
                                 default        => 'warning text-dark',
                             };
-                            $trClass = ($row->STATUS_TERBIT === 'Lewat Teguran' || $row->STATUS_KCKR === 'Belum')
+                            $trClass = (!$isPre26 && ($row->STATUS_TERBIT === 'Lewat Teguran' || $row->STATUS_KCKR === 'Belum'))
                                 ? 'table-danger'
-                                : ($row->STATUS_KCKR === 'Sudah' ? 'table-success' : '');
+                                : ($row->STATUS_KCKR === 'Sudah' ? 'table-success' : ($isPre26 ? 'table-light' : ''));
                         @endphp
                         <tr class="{{ $trClass }}">
                             <td class="text-muted">{{ ($page - 1) * $perPage + $i + 1 }}</td>
@@ -300,26 +265,32 @@
                                 @if($row->JENIS_MEDIA === '1')
                                     <span class="badge bg-primary">Cetak</span>
                                 @else
-                                    <span class="badge bg-purple" style="background:#6f42c1">Rekam</span>
+                                    <span class="badge" style="background:#6f42c1">Rekam</span>
                                 @endif
                             </td>
                             <td>{{ $row->TGL_DAFTAR ? date('d/m/Y', strtotime($row->TGL_DAFTAR)) : '-' }}</td>
-                            <td>{{ $row->DEADLINE_TERBIT ? date('d/m/Y', strtotime($row->DEADLINE_TERBIT)) : '-' }}</td>
+                            {{-- Deadline & Status Terbit: hanya 2026+ --}}
+                            <td class="{{ $isPre26 ? 'text-muted' : '' }}">
+                                {{ ($isPre26 || !$row->DEADLINE_TERBIT) ? '-' : date('d/m/Y', strtotime($row->DEADLINE_TERBIT)) }}
+                            </td>
                             <td>
-                                @if($row->TANGGAL_TERBIT)
+                                @if(!$isPre26 && $row->TANGGAL_TERBIT)
                                     <span class="text-success fw-semibold">{{ date('d/m/Y', strtotime($row->TANGGAL_TERBIT)) }}</span>
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif
                             </td>
-                            <td><span class="badge bg-{{ $statusTerbitColor }}">{{ $row->STATUS_TERBIT }}</span></td>
-                            <td class="text-muted">{{ $row->BATAS_TEGURAN ? date('d/m/Y', strtotime($row->BATAS_TEGURAN)) : '-' }}</td>
-                            <td class="text-muted">
-                                @if($row->TANGGAL_TERBIT && $row->DEADLINE_KCKR)
-                                    {{ date('d/m/Y', strtotime($row->DEADLINE_KCKR)) }}
-                                @else
-                                    -
+                            <td>
+                                <span class="badge bg-{{ $statusTerbitColor }}">{{ $row->STATUS_TERBIT }}</span>
+                                @if($isPre26)
+                                    <small class="text-muted ms-1" style="font-size:.65rem">(pra-2026)</small>
                                 @endif
+                            </td>
+                            <td class="text-muted">
+                                {{ (!$isPre26 && $row->BATAS_TEGURAN) ? date('d/m/Y', strtotime($row->BATAS_TEGURAN)) : '-' }}
+                            </td>
+                            <td class="text-muted">
+                                {{ $row->DEADLINE_KCKR ? date('d/m/Y', strtotime($row->DEADLINE_KCKR)) : '-' }}
                             </td>
                             <td>
                                 @if($row->RECEIVED_DATE_KCKR)
@@ -332,10 +303,8 @@
                             <td class="text-center">
                                 @if($row->TERLAMBAT_KCKR === 'Ya')
                                     <span class="badge bg-danger">Ya</span>
-                                @elseif($row->TERLAMBAT_KCKR === 'Tidak')
-                                    <span class="badge bg-success">Tidak</span>
                                 @else
-                                    <span class="text-muted">-</span>
+                                    <span class="badge bg-success">Tidak</span>
                                 @endif
                             </td>
                         </tr>
@@ -349,7 +318,6 @@
             </div>
         </div>
 
-        {{-- Pagination --}}
         @if($lastPage > 1)
         <div class="card-footer py-2">
             <nav>
@@ -371,7 +339,6 @@
 
 </div>
 
-{{-- Loading Modal --}}
 <div class="modal fade" id="exportModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -394,7 +361,7 @@ function doExport() {
     const token  = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
     const params = new URLSearchParams(window.location.search);
     params.set('download_token', token);
-    const url    = '{{ route("compliance_v2.detail.export", $penerbit->ID) }}?' + params.toString();
+    const url    = '{{ route("compliance_v3.detail.export", $penerbit->ID) }}?' + params.toString();
     const modal  = new bootstrap.Modal(document.getElementById('exportModal'));
     const bar    = document.getElementById('exportProgress');
     let pct = 0;

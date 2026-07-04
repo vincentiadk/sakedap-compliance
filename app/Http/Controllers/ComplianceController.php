@@ -18,7 +18,7 @@ class ComplianceController extends Controller
                 AND PI.CREATEDATE <  TO_DATE('$end',   'YYYY-MM-DD')";
     }
 
-    private function buildBaseQuery(string $dateWhere, string $provinceWhere, ?string $kategori, ?string $persentase, ?string $search = null): string
+    private function buildBaseQuery(string $dateWhere, string $provinceWhere, ?string $kategori, ?string $persentase, ?string $search = null, ?string $filterRekomendasi = null): string
     {
         $kategoriWhere = !empty($kategori) ? "AND P.KATEGORI_ID = " . intval($kategori) : '';
         $searchWhere   = !empty($search)   ? "AND UPPER(P.NAME) LIKE '%" . strtoupper(addslashes($search)) . "%'" : '';
@@ -45,6 +45,20 @@ class ComplianceController extends Controller
                                                  ELSE CASE WHEN PT.JENIS_MEDIA = '1' THEN ADD_MONTHS(PI.CREATEDATE, 3)
                                                            ELSE ADD_MONTHS(PI.CREATEDATE, 12) END END)
                          THEN 1 ELSE 0 END) as JUMLAHTERLAMBATKCKR,
+                SUM(CASE WHEN PT.JENIS_MEDIA = '1' AND (
+                              (PI.RECEIVED_DATE_KCKR IS NOT NULL
+                               AND PI.RECEIVED_DATE_KCKR > CASE WHEN P.KATEGORI_ID = 1 THEN ADD_MONTHS(PI.CREATEDATE, 3)
+                                                                ELSE ADD_MONTHS(PI.CREATEDATE, 3) END)
+                           OR (PI.RECEIVED_DATE_KCKR IS NULL
+                               AND SYSDATE > CASE WHEN P.KATEGORI_ID = 1 THEN ADD_MONTHS(PI.CREATEDATE, 3)
+                                                  ELSE ADD_MONTHS(PI.CREATEDATE, 3) END)
+                         ) THEN 1 ELSE 0 END) as TERLAMBATKCKR_CETAK,
+                SUM(CASE WHEN (PT.JENIS_MEDIA != '1' OR PT.JENIS_MEDIA IS NULL) AND (
+                              (PI.RECEIVED_DATE_KCKR IS NOT NULL
+                               AND PI.RECEIVED_DATE_KCKR > ADD_MONTHS(PI.CREATEDATE, 12))
+                           OR (PI.RECEIVED_DATE_KCKR IS NULL
+                               AND SYSDATE > ADD_MONTHS(PI.CREATEDATE, 12))
+                         ) THEN 1 ELSE 0 END) as TERLAMBATKCKR_REKAM,
                 SUM(CASE WHEN PI.RECEIVED_DATE_KCKR IS NOT NULL
                           AND PI.RECEIVED_DATE_KCKR <= CASE WHEN P.KATEGORI_ID = 1 THEN ADD_MONTHS(PI.CREATEDATE, 3)
                                                             ELSE CASE WHEN PT.JENIS_MEDIA = '1' THEN ADD_MONTHS(PI.CREATEDATE, 3)
@@ -68,9 +82,16 @@ class ComplianceController extends Controller
             HAVING COUNT(DISTINCT PI.ID) > 0
         ";
 
+        $outerWhere = '';
         if (!empty($persentase)) {
             [$min, $max] = $this->parsePersentaseRange($persentase);
-            $query = "SELECT * FROM ($query) WHERE PERSENTASE_KCKR BETWEEN $min AND $max";
+            $outerWhere .= " AND PERSENTASE_KCKR BETWEEN $min AND $max";
+        }
+        if ($filterRekomendasi === 'blokir_kckr') $outerWhere .= ' AND JUMLAHTERLAMBATKCKR > 0 AND PERSENTASE_KCKR <= 20';
+        if ($filterRekomendasi === 'baik')         $outerWhere .= ' AND NOT (JUMLAHTERLAMBATKCKR > 0 AND PERSENTASE_KCKR <= 20)';
+
+        if ($outerWhere) {
+            $query = "SELECT * FROM ($query) WHERE 1=1 $outerWhere";
         }
 
         return $query;
@@ -101,7 +122,21 @@ class ComplianceController extends Controller
                               AND SYSDATE > CASE WHEN P.KATEGORI_ID = 1 THEN ADD_MONTHS(PI.CREATEDATE, 3)
                                                  ELSE CASE WHEN PT.JENIS_MEDIA = '1' THEN ADD_MONTHS(PI.CREATEDATE, 3)
                                                            ELSE ADD_MONTHS(PI.CREATEDATE, 12) END END)
-                         THEN 1 ELSE 0 END) as TOTAL_TERLAMBAT
+                         THEN 1 ELSE 0 END) as TOTAL_TERLAMBAT,
+                SUM(CASE WHEN PT.JENIS_MEDIA = '1' AND (
+                              (PI.RECEIVED_DATE_KCKR IS NOT NULL
+                               AND PI.RECEIVED_DATE_KCKR > CASE WHEN P.KATEGORI_ID = 1 THEN ADD_MONTHS(PI.CREATEDATE, 3)
+                                                                ELSE ADD_MONTHS(PI.CREATEDATE, 3) END)
+                           OR (PI.RECEIVED_DATE_KCKR IS NULL
+                               AND SYSDATE > CASE WHEN P.KATEGORI_ID = 1 THEN ADD_MONTHS(PI.CREATEDATE, 3)
+                                                  ELSE ADD_MONTHS(PI.CREATEDATE, 3) END)
+                         ) THEN 1 ELSE 0 END) as TOTAL_TERLAMBAT_CETAK,
+                SUM(CASE WHEN (PT.JENIS_MEDIA != '1' OR PT.JENIS_MEDIA IS NULL) AND (
+                              (PI.RECEIVED_DATE_KCKR IS NOT NULL
+                               AND PI.RECEIVED_DATE_KCKR > ADD_MONTHS(PI.CREATEDATE, 12))
+                           OR (PI.RECEIVED_DATE_KCKR IS NULL
+                               AND SYSDATE > ADD_MONTHS(PI.CREATEDATE, 12))
+                         ) THEN 1 ELSE 0 END) as TOTAL_TERLAMBAT_REKAM
             FROM PENERBIT P
             LEFT JOIN PENERBIT_ISBN PI ON P.ID = PI.PENERBIT_ID
                 $joinCondition
@@ -128,7 +163,9 @@ class ComplianceController extends Controller
                 SUM(JUMLAHBELUMKCKR) as TOTAL_BELUM_KCKR,
                 SUM(BELUMKCKR_CETAK) as TOTAL_BELUM_CETAK,
                 SUM(BELUMKCKR_REKAM) as TOTAL_BELUM_REKAM,
-                SUM(JUMLAHTERLAMBATKCKR) as TOTAL_TERLAMBAT
+                SUM(JUMLAHTERLAMBATKCKR) as TOTAL_TERLAMBAT,
+                SUM(TERLAMBATKCKR_CETAK) as TOTAL_TERLAMBAT_CETAK,
+                SUM(TERLAMBATKCKR_REKAM) as TOTAL_TERLAMBAT_REKAM
             FROM ($baseQuery)
         ";
         $result = odbc_exec($conn, $sql);
@@ -187,7 +224,7 @@ class ComplianceController extends Controller
             $conn      = $this->getOracleConnection();
             $provinces = array_map(
                 fn($r) => (object) $r,
-                Cache::remember('compliance:provinces', 900, fn() =>
+                Cache::remember('compliance:provinces', 3600, fn() =>
                     array_map(fn($r) => (array) $r, $this->fetchProvinces($conn))
                 )
             );
@@ -202,10 +239,11 @@ class ComplianceController extends Controller
         try {
             $conn        = $this->getOracleConnection();
             $page        = (int) $request->get('page', 1);
-            $kategori    = $request->kategori    ?? null;
-            $persentase  = $request->persentase  ?? null;
-            $provinceIds = $request->province_ids ?? [];
-            $search      = trim($request->search ?? '');
+            $kategori           = $request->kategori           ?? null;
+            $persentase         = $request->persentase         ?? null;
+            $filterRekomendasi  = $request->filter_rekomendasi ?? null;
+            $provinceIds        = $request->province_ids       ?? [];
+            $search             = trim($request->search        ?? '');
 
             $dateFilter    = $this->parseDateFilter($request);
             $dateWhere     = $this->buildDateWhere($dateFilter['start'], $dateFilter['end']);
@@ -215,20 +253,20 @@ class ComplianceController extends Controller
             $sortDir = $request->sort_dir ?? 'DESC';
 
             // Total keseluruhan tidak bergantung filter — cache terpisah
-            $summary = (object) Cache::remember('compliance:summary_total', 900, function() use ($conn) {
+            $summary = (object) Cache::remember('compliance:summary_total', 3600, function() use ($conn) {
                 return (array) $this->fetchSummary($conn, '', '', null, null);
             });
 
             // Subtotal + paginated — cache per kombinasi filter+halaman+sort
             $dataKey = $this->makeCacheKey($request, 'compliance:data', [
                 'filter_type', 'filter_year', 'filter_month', 'start_date', 'end_date',
-                'province_ids', 'kategori', 'persentase', 'search', 'page', 'sort_col', 'sort_dir',
+                'province_ids', 'kategori', 'persentase', 'filter_rekomendasi', 'search', 'page', 'sort_col', 'sort_dir',
             ]);
 
-            $cached = Cache::remember($dataKey, 900, function() use (
-                $conn, $dateWhere, $provinceWhere, $kategori, $persentase, $search, $page, $sortCol, $sortDir
+            $cached = Cache::remember($dataKey, 3600, function() use (
+                $conn, $dateWhere, $provinceWhere, $kategori, $persentase, $filterRekomendasi, $search, $page, $sortCol, $sortDir
             ) {
-                $baseQuery = $this->buildBaseQuery($dateWhere, $provinceWhere, $kategori, $persentase, $search);
+                $baseQuery = $this->buildBaseQuery($dateWhere, $provinceWhere, $kategori, $persentase, $search, $filterRekomendasi);
                 $subtotal  = (array) $this->fetchSubtotal($conn, $baseQuery);
                 $paginated = $this->fetchPaginated($conn, $baseQuery, $page, $sortCol, $sortDir);
 
@@ -284,7 +322,7 @@ class ComplianceController extends Controller
             $searchWhere = $this->buildDetailSearchWhere($request);
 
             // Cache penerbit info (jarang berubah)
-            $penerbit = (object) Cache::remember("compliance:penerbit:$penerbitId", 900, function() use ($conn, $penerbitId) {
+            $penerbit = (object) Cache::remember("compliance:penerbit:$penerbitId", 3600, function() use ($conn, $penerbitId) {
                 $r = odbc_fetch_object(odbc_exec($conn, "SELECT P.ID, P.NAME, P.ALAMAT, P.PROVINSI, P.CITY, P.KATEGORI_ID FROM PENERBIT P WHERE P.ID = $penerbitId"));
                 return $r ? (array) $r : null;
             });
@@ -326,7 +364,7 @@ class ComplianceController extends Controller
             $summaryKey = $this->makeCacheKey($request, "compliance:detail:$penerbitId:summary", [
                 'filter_type', 'filter_year', 'filter_month', 'start_date', 'end_date',
             ]);
-            $summary = (object) Cache::remember($summaryKey, 900, function() use ($conn, $fromJoin) {
+            $summary = (object) Cache::remember($summaryKey, 3600, function() use ($conn, $fromJoin) {
                 $r = odbc_exec($conn, "
                     SELECT
                         COUNT(*) as TOTAL,
@@ -354,7 +392,7 @@ class ComplianceController extends Controller
                 'tgl_daftar_start', 'tgl_daftar_end', 'tgl_kckr_start', 'tgl_kckr_end',
             ]) . ':' . $page;
 
-            $cached = Cache::remember($pageKey, 900, function() use ($conn, $fromJoin, $searchWhere, $selectCols, $page, $perPage) {
+            $cached = Cache::remember($pageKey, 3600, function() use ($conn, $fromJoin, $searchWhere, $selectCols, $page, $perPage) {
                 $countResult = odbc_exec($conn, "SELECT COUNT(*) as TOTAL $fromJoin $searchWhere");
                 $total       = (int) (odbc_fetch_object($countResult)->TOTAL ?? 0);
                 $lastPage    = max(1, (int) ceil($total / $perPage));
@@ -710,7 +748,7 @@ class ComplianceController extends Controller
         ]);
 
         // Ringkasan rows — selalu dibutuhkan
-        $ringkasanRows = Cache::remember($exportKey . ':ringkasan', 900, function() use ($conn, $baseQuery) {
+        $ringkasanRows = Cache::remember($exportKey . ':ringkasan', 3600, function() use ($conn, $baseQuery) {
             $result = odbc_exec($conn, "SELECT * FROM ($baseQuery) ORDER BY NAME ASC");
             $rows = [];
             while ($row = odbc_fetch_object($result)) {
@@ -737,7 +775,7 @@ class ComplianceController extends Controller
                 return $this->streamXlsx($sp, $filename, $request);
             }
 
-            $detailRows = Cache::remember($exportKey . ':detail', 900, function() use ($conn, $sql) {
+            $detailRows = Cache::remember($exportKey . ':detail', 3600, function() use ($conn, $sql) {
                 $result = odbc_exec($conn, $sql);
                 $rows = [];
                 while ($row = odbc_fetch_object($result)) {
@@ -838,7 +876,7 @@ class ComplianceController extends Controller
             'tgl_daftar_start', 'tgl_daftar_end', 'tgl_kckr_start', 'tgl_kckr_end',
         ]);
 
-        $rows = Cache::remember($detailKey, 900, function() use ($conn, $sql) {
+        $rows = Cache::remember($detailKey, 3600, function() use ($conn, $sql) {
             $result = odbc_exec($conn, $sql);
             $rows = [];
             while ($row = odbc_fetch_object($result)) {

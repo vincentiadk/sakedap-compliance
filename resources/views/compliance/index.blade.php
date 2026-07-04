@@ -15,19 +15,6 @@ body { background-color: #f8f9fa; }
 .sort-icon { font-size: .7rem; opacity: .4; }
 .sort-icon.active { opacity: 1; color: #0d6efd; }
 
-/* Loading overlay */
-#loadingOverlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(255,255,255,.6);
-    z-index: 9999;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(2px);
-}
-#loadingOverlay.show { display: flex; }
-.spinner-wrap { background: #fff; border-radius: 12px; padding: 24px 32px; box-shadow: 0 4px 20px rgba(0,0,0,.15); text-align: center; }
 
 /* Export modal */
 #exportModal .modal-header { background: #1976D2; color: #fff; }
@@ -42,14 +29,6 @@ body { background-color: #f8f9fa; }
 
 .page-link { cursor: pointer; }
 </style>
-
-{{-- Loading Overlay (untuk load data) --}}
-<div id="loadingOverlay">
-    <div class="spinner-wrap">
-        <div class="spinner-border text-primary mb-2" style="width:2.5rem;height:2.5rem;"></div>
-        <div class="text-muted fw-bold">Memuat data...</div>
-    </div>
-</div>
 
 {{-- Export Modal --}}
 <div class="modal fade" id="exportModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -85,12 +64,19 @@ body { background-color: #f8f9fa; }
     </div>
 </div>
 
-<div class="container-fluid mt-4 px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>📋 Compliance Penerbit SAKEDAP</h2>
-        <a href="#" onclick="goToDashboard(); return false;" class="btn btn-outline-primary btn-sm">
-            <i class="fas fa-chart-pie"></i> Dashboard
-        </a>
+<div class="container-fluid px-4">
+
+    {{-- Header --}}
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h4 class="mb-0 fw-bold">Compliance KCKR s.d. 2025</h4>
+            <small class="text-muted">Berbasis Tanggal ISBN diberikan &mdash; Deadline: KC 3 bulan, KR 1 tahun sejak ISBN diberikan (pemerintah: 3 bulan)</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="#" onclick="goToDashboard(); return false;" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </a>
+        </div>
     </div>
 
     @if(isset($error))
@@ -98,132 +84,111 @@ body { background-color: #f8f9fa; }
     @endif
 
     {{-- Filter --}}
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center" style="cursor:pointer" onclick="toggleFilter()">
-            <h5 class="mb-0">🔍 Filter Data</h5>
-            <i class="fas fa-chevron-up" id="filterChevron"></i>
-        </div>
-        <div class="card-body" id="filterBody">
-            <div class="row g-3">
-                {{-- Filter Tanggal --}}
-                <div class="col-md-5">
-                    <label class="form-label fw-bold">Filter Tanggal</label>
-                    <div class="btn-group w-100 mb-2" role="group">
-                        @php $initFilterType = request('filter_type', 'tahun'); @endphp
-                        @foreach(['tahun' => 'Per Tahun', 'bulan' => 'Per Bulan', 'range' => 'Range Tanggal'] as $val => $label)
-                            <input type="radio" class="btn-check filter-input" name="filter_type" id="type_{{ $val }}"
-                                value="{{ $val }}" {{ $val == $initFilterType ? 'checked' : '' }}
-                                onchange="toggleDateFilter()">
-                            <label class="btn btn-outline-primary btn-sm" for="type_{{ $val }}">{{ $label }}</label>
+    @php
+        $initFilterType = request('filter_type', 'tahun');
+        $initYear  = min((int) request('filter_year', 2025), 2025);
+        $initMonth = (int) request('filter_month', date('n'));
+        $initProvinceIds = array_map('intval', request('province_ids', []));
+    @endphp
+    <div class="card shadow-sm mb-3">
+        <div class="card-body py-2">
+            <div class="row g-2 align-items-end flex-wrap">
+
+                {{-- Tipe filter --}}
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Tipe Filter</label>
+                    <select class="form-select form-select-sm" id="filterType" onchange="onFilterTypeChange()">
+                        <option value="tahun" {{ $initFilterType==='tahun' ? 'selected':'' }}>Per Tahun</option>
+                        <option value="bulan" {{ $initFilterType==='bulan' ? 'selected':'' }}>Per Bulan</option>
+                        <option value="range" {{ $initFilterType==='range' ? 'selected':'' }}>Rentang</option>
+                    </select>
+                </div>
+
+                {{-- Tahun --}}
+                <div id="wrapTahun" class="col-auto filter-wrap">
+                    <label class="form-label form-label-sm mb-1">Tahun</label>
+                    <select class="form-select form-select-sm" id="filterYear">
+                        @for($y = 2025; $y >= 2015; $y--)
+                            <option value="{{ $y }}" {{ $y==$initYear ? 'selected':'' }}>{{ $y }}</option>
+                        @endfor
+                    </select>
+                </div>
+
+                {{-- Bulan --}}
+                <div id="wrapBulan" class="col-auto filter-wrap d-none">
+                    <label class="form-label form-label-sm mb-1">Bulan</label>
+                    <select class="form-select form-select-sm" id="filterMonth">
+                        @foreach(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i=>$bln)
+                            <option value="{{ $i+1 }}" {{ ($i+1)==$initMonth ? 'selected':'' }}>{{ $bln }}</option>
                         @endforeach
-                    </div>
-                    @php
-                        $initYear  = (int) request('filter_year', 2025);
-                        $initYear  = min($initYear, 2025); // max 2025
-                        $initMonth = (int) request('filter_month', date('n'));
-                    @endphp
-                    <div id="filter_tahun" class="filter-section">
-                        <select name="filter_year" class="form-select filter-input">
-                            @for($y = 2025; $y >= 2015; $y--)
-                                <option value="{{ $y }}" {{ $y == $initYear ? 'selected' : '' }}>Tahun {{ $y }}</option>
-                            @endfor
-                        </select>
-                    </div>
-                    <div id="filter_bulan" class="filter-section" style="display:none">
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <select name="filter_month" class="form-select filter-input">
-                                    @foreach(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $bln)
-                                        <option value="{{ $i+1 }}" {{ ($i+1) == $initMonth ? 'selected' : '' }}>{{ $bln }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <select name="filter_year_bulan" class="form-select filter-input">
-                                    @for($y = 2025; $y >= 2015; $y--)
-                                        <option value="{{ $y }}" {{ $y == $initYear ? 'selected' : '' }}>{{ $y }}</option>
-                                    @endfor
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="filter_range" class="filter-section" style="display:none">
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <input type="date" name="start_date" class="form-control filter-input"
-                                    value="{{ request('start_date', '2025-01-01') }}">
-                            </div>
-                            <div class="col-6">
-                                <input type="date" name="end_date" class="form-control filter-input"
-                                    value="{{ request('end_date', '2025-12-31') }}">
-                            </div>
-                        </div>
-                    </div>
+                    </select>
                 </div>
 
-                {{-- Pencarian --}}
-                <div class="col-md-12">
-                    <label class="form-label fw-bold">Cari Nama Penerbit</label>
-                    <input type="text" name="search" id="searchInput" class="form-control"
-                        placeholder="Ketik nama penerbit...">
+                {{-- Range --}}
+                <div id="wrapRangeFrom" class="col-auto filter-wrap d-none">
+                    <label class="form-label form-label-sm mb-1">Dari</label>
+                    <input type="date" class="form-control form-control-sm" id="startDate" value="{{ request('start_date','2025-01-01') }}">
                 </div>
-
-                {{-- Kategori + Persentase --}}
-                <div class="col-md-2">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Kategori</label>
-                        <select name="kategori" class="form-select filter-input">
-                            <option value="">-- Semua --</option>
-                            <option value="1">Pemerintah</option>
-                            <option value="2">Swasta</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label fw-bold">% KCKR</label>
-                        <select name="persentase" class="form-select filter-input">
-                            <option value="">-- Semua --</option>
-                            <option value="0-20">0% – 20%</option>
-                            <option value="21-40">21% – 40%</option>
-                            <option value="41-60">41% – 60%</option>
-                            <option value="61-80">61% – 80%</option>
-                            <option value="81-100">81% – 100%</option>
-                        </select>
-                    </div>
+                <div id="wrapRangeTo" class="col-auto filter-wrap d-none">
+                    <label class="form-label form-label-sm mb-1">Sampai</label>
+                    <input type="date" class="form-control form-control-sm" id="endDate" value="{{ request('end_date','2025-12-31') }}">
                 </div>
 
                 {{-- Provinsi --}}
-                <div class="col-md-5">
-                    <label class="form-label fw-bold">Provinsi</label>
-                    <div class="d-flex gap-2 mb-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectAllProvinces(true)">Pilih Semua</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectAllProvinces(false)">Hapus Semua</button>
-                    </div>
-                    <div class="province-list">
-                        @if(isset($provinces) && count($provinces) > 0)
-                            @php $initProvinceIds = array_map('intval', request('province_ids', [])); @endphp
-                            @foreach($provinces as $prov)
-                                <label>
-                                    <input type="checkbox" name="province_ids[]" value="{{ $prov->ID }}"
-                                        class="province-cb me-1"
-                                        {{ in_array((int)$prov->ID, $initProvinceIds) ? 'checked' : '' }}>
-                                    {{ $prov->NAMAPROPINSI }}
-                                </label>
-                            @endforeach
-                        @else
-                            <small class="text-muted">Tidak ada data provinsi</small>
-                        @endif
-                    </div>
-                    <small class="text-muted">Kosongkan = semua provinsi</small>
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Provinsi</label>
+                    <select class="form-select form-select-sm" id="provinceFilter" multiple size="1" style="height:31px;min-width:160px">
+                        @foreach($provinces ?? [] as $prov)
+                            <option value="{{ $prov->ID }}" {{ in_array((int)$prov->ID, $initProvinceIds) ? 'selected':'' }}>
+                                {{ $prov->NAMAPROPINSI }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
-            </div>
 
-            <div class="mt-3 d-flex gap-2">
-                <button type="button" class="btn btn-primary" onclick="loadData(1)">
-                    <i class="fas fa-search"></i> Tampilkan
-                </button>
-                <button type="button" class="btn btn-secondary" onclick="resetFilter()">
-                    <i class="fas fa-redo"></i> Reset
-                </button>
+                {{-- Kategori --}}
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Kategori</label>
+                    <select class="form-select form-select-sm" id="filterKategori">
+                        <option value="">Semua</option>
+                        <option value="1" {{ request('kategori')==='1' ? 'selected':'' }}>Pemerintah</option>
+                        <option value="2" {{ request('kategori')==='2' ? 'selected':'' }}>Swasta</option>
+                    </select>
+                </div>
+
+                {{-- Rekomendasi --}}
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Rekomendasi</label>
+                    <select class="form-select form-select-sm" id="filterRekomendasi">
+                        <option value="">Semua</option>
+                        <option value="blokir_kckr">Blokir SS KCKR</option>
+                        <option value="baik">Baik</option>
+                    </select>
+                </div>
+
+                {{-- % KCKR --}}
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">% KCKR</label>
+                    <select class="form-select form-select-sm" id="filterPersentase">
+                        <option value="">Semua</option>
+                        <option value="0-20"   {{ request('persentase')==='0-20'   ? 'selected':'' }}>0–20%</option>
+                        <option value="21-40"  {{ request('persentase')==='21-40'  ? 'selected':'' }}>21–40%</option>
+                        <option value="41-60"  {{ request('persentase')==='41-60'  ? 'selected':'' }}>41–60%</option>
+                        <option value="61-80"  {{ request('persentase')==='61-80'  ? 'selected':'' }}>61–80%</option>
+                        <option value="81-100" {{ request('persentase')==='81-100' ? 'selected':'' }}>81–100%</option>
+                    </select>
+                </div>
+
+                {{-- Cari penerbit --}}
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-1">Cari Penerbit</label>
+                    <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Nama penerbit...">
+                </div>
+
+                <div class="col-auto">
+                    <button class="btn btn-primary btn-sm mt-3" onclick="loadData(1)">Tampilkan</button>
+                    <button class="btn btn-outline-secondary btn-sm mt-3" onclick="resetFilter()">Reset</button>
+                </div>
             </div>
         </div>
     </div>
@@ -239,7 +204,7 @@ body { background-color: #f8f9fa; }
     {{-- Tabel --}}
     <div class="card shadow-sm">
         <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">📋 Data Penerbit</h5>
+            <h5 class="mb-0">Data Penerbit</h5>
             <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-white text-success" id="totalBadge"></span>
                 <button class="btn btn-sm btn-light" onclick="doExport(0)" title="Export ringkasan penerbit (Excel)">
@@ -254,32 +219,41 @@ body { background-color: #f8f9fa; }
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>No</th>
-                        <th class="sortable" onclick="setSort('NAME')">
+                        <th rowspan="2" class="align-middle">No</th>
+                        <th rowspan="2" class="align-middle sortable" onclick="setSort('NAME')">
                             Nama Penerbit <span class="sort-icon" id="sort_NAME">⇅</span>
                         </th>
-                        <th>Kategori</th>
-                        <th>Provinsi</th>
-                        <th class="text-center sortable" onclick="setSort('JUMLAHJUDUL')">
+                        <th rowspan="2" class="align-middle">Kategori</th>
+                        <th rowspan="2" class="align-middle">Provinsi</th>
+                        <th rowspan="2" class="text-center align-middle sortable" onclick="setSort('JUMLAHJUDUL')">
                             Jml Judul <span class="sort-icon" id="sort_JUMLAHJUDUL">⇅</span>
                         </th>
-                        <th class="text-center sortable" onclick="setSort('JUMLAHSUDAHKCKR')">
+                        <th colspan="3" class="text-center bg-success bg-opacity-25 sortable" onclick="setSort('JUMLAHSUDAHKCKR')">
                             Sudah KCKR <span class="sort-icon" id="sort_JUMLAHSUDAHKCKR">⇅</span>
                         </th>
-                        <th class="text-center sortable" onclick="setSort('JUMLAHBELUMKCKR')">
+                        <th colspan="3" class="text-center bg-warning bg-opacity-25 sortable" onclick="setSort('JUMLAHBELUMKCKR')">
                             Belum KCKR <span class="sort-icon" id="sort_JUMLAHBELUMKCKR">⇅</span>
                         </th>
-                        <th class="text-center sortable" onclick="setSort('JUMLAHTERLAMBATKCKR')">
+                        <th rowspan="2" class="text-center align-middle sortable" onclick="setSort('JUMLAHTERLAMBATKCKR')">
                             Terlambat <span class="sort-icon" id="sort_JUMLAHTERLAMBATKCKR">⇅</span>
                         </th>
-                        <th class="text-center">Tepat Waktu</th>
-                        <th class="text-center sortable" onclick="setSort('PERSENTASE_KCKR')">
+                        <th rowspan="2" class="text-center align-middle">Tepat Waktu</th>
+                        <th rowspan="2" class="text-center align-middle sortable" onclick="setSort('PERSENTASE_KCKR')">
                             % KCKR <span class="sort-icon" id="sort_PERSENTASE_KCKR">⇅</span>
                         </th>
+                        <th rowspan="2" class="text-center align-middle">Rekomendasi</th>
+                    </tr>
+                    <tr>
+                        <th class="text-center bg-success bg-opacity-25" style="font-weight:normal;font-size:.8rem">Total</th>
+                        <th class="text-center bg-success bg-opacity-25" style="font-weight:normal;font-size:.8rem">Cetak</th>
+                        <th class="text-center bg-success bg-opacity-25" style="font-weight:normal;font-size:.8rem">Rekam</th>
+                        <th class="text-center bg-warning bg-opacity-25" style="font-weight:normal;font-size:.8rem">Total</th>
+                        <th class="text-center bg-warning bg-opacity-25" style="font-weight:normal;font-size:.8rem">Cetak</th>
+                        <th class="text-center bg-warning bg-opacity-25" style="font-weight:normal;font-size:.8rem">Rekam</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="10" class="text-center text-muted py-5">Pilih filter dan klik Tampilkan</td></tr>
+                    <tr><td colspan="15" class="text-center text-muted py-5">Pilih filter dan klik Tampilkan</td></tr>
                 </tbody>
             </table>
         </div>
@@ -319,52 +293,42 @@ function updateSortIcons() {
     }
 }
 
-function toggleFilter() {
-    const body    = document.getElementById('filterBody');
-    const chevron = document.getElementById('filterChevron');
-    const isOpen  = body.style.display !== 'none';
-    body.style.display    = isOpen ? 'none' : '';
-    chevron.className     = isOpen ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
-}
-
 function getFilters(page) {
     const params = new URLSearchParams();
     params.set('page', page ?? currentPage);
 
-    // filter_type
-    const filterType = document.querySelector('input[name="filter_type"]:checked')?.value ?? 'tahun';
+    const filterType = document.getElementById('filterType').value;
     params.set('filter_type', filterType);
 
     if (filterType === 'tahun') {
-        params.set('filter_year', document.querySelector('[name="filter_year"]').value);
+        params.set('filter_year', document.getElementById('filterYear').value);
     } else if (filterType === 'bulan') {
-        params.set('filter_month', document.querySelector('[name="filter_month"]').value);
-        params.set('filter_year', document.querySelector('[name="filter_year_bulan"]').value);
+        params.set('filter_month', document.getElementById('filterMonth').value);
+        params.set('filter_year',  document.getElementById('filterYear').value);
     } else {
-        params.set('start_date', document.querySelector('[name="start_date"]').value);
-        params.set('end_date',   document.querySelector('[name="end_date"]').value);
+        params.set('start_date', document.getElementById('startDate').value);
+        params.set('end_date',   document.getElementById('endDate').value);
     }
 
-    params.set('kategori',   document.querySelector('[name="kategori"]').value);
-    params.set('persentase', document.querySelector('[name="persentase"]').value);
-    params.set('search',   document.querySelector('[name="search"]').value);
+    const v = id => document.getElementById(id).value;
+    if (v('filterKategori'))    params.set('kategori',            v('filterKategori'));
+    if (v('filterRekomendasi')) params.set('filter_rekomendasi',  v('filterRekomendasi'));
+    if (v('filterPersentase'))  params.set('persentase',          v('filterPersentase'));
+    if (v('searchInput'))      params.set('search',     v('searchInput'));
     params.set('sort_col', sortCol);
     params.set('sort_dir', sortDir);
 
-    document.querySelectorAll('.province-cb:checked').forEach(cb => {
-        params.append('province_ids[]', cb.value);
+    [...document.getElementById('provinceFilter').selectedOptions].forEach(o => {
+        params.append('province_ids[]', o.value);
     });
 
     return params;
 }
 
-function showLoading(show) {
-    document.getElementById('loadingOverlay').classList.toggle('show', show);
-}
-
 function loadData(page) {
     currentPage = page ?? 1;
-    showLoading(true);
+    document.getElementById('tableBody').innerHTML =
+        '<tr><td colspan="15" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Memuat...</td></tr>';
 
     const params = getFilters(currentPage);
 
@@ -379,8 +343,7 @@ function loadData(page) {
             renderTable(res.data, res.current_page, res.per_page);
             renderPagination(res.current_page, res.last_page, res.total, res.per_page);
         })
-        .catch(e => alert('Gagal memuat data: ' + e))
-        .finally(() => showLoading(false));
+        .catch(e => alert('Gagal memuat data: ' + e));
 }
 
 function fmt(n) { return Number(n ?? 0).toLocaleString('id-ID'); }
@@ -421,7 +384,7 @@ function renderSummary(s, sub) {
             statCard('Total ISBN',     d.TOTAL_ISBN,     'info',    b('info')),
             statCardBreakdown('Sudah KCKR', d.TOTAL_SUDAH_KCKR, d.TOTAL_SUDAH_CETAK, d.TOTAL_SUDAH_REKAM, 'success', b('success')),
             statCardBreakdown('Belum KCKR', d.TOTAL_BELUM_KCKR, d.TOTAL_BELUM_CETAK, d.TOTAL_BELUM_REKAM, 'warning', b('warning')),
-            statCard('Terlambat',      d.TOTAL_TERLAMBAT, 'danger', b('danger')),
+            statCardBreakdown('Terlambat', d.TOTAL_TERLAMBAT, d.TOTAL_TERLAMBAT_CETAK, d.TOTAL_TERLAMBAT_REKAM, 'danger', b('danger')),
         ].join('');
     };
 
@@ -456,7 +419,7 @@ function detailUrl(penerbitId) {
 function renderTable(rows, page, perPage) {
     const tbody = document.getElementById('tableBody');
     if (!rows || rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4"><i class="fas fa-inbox"></i> Tidak ada data</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="15" class="text-center text-muted py-4"><i class="fas fa-inbox"></i> Tidak ada data</td></tr>`;
         return;
     }
     tbody.innerHTML = rows.map((row, i) => {
@@ -468,17 +431,18 @@ function renderTable(rows, page, perPage) {
             <td>${kategoriBadge(row.KATEGORI)}</td>
             <td>${row.PROVINSI ?? ''}</td>
             <td class="text-center"><span class="badge bg-primary">${row.JUMLAHJUDUL ?? 0}</span></td>
-            <td class="text-center">
-                <span class="badge bg-success">${row.JUMLAHSUDAHKCKR ?? 0}</span>
-                <br><small class="text-muted" style="font-size:.7rem">📄${row.SUDAHKCKR_CETAK??0} 🎬${row.SUDAHKCKR_REKAM??0}</small>
-            </td>
-            <td class="text-center">
-                <span class="badge bg-warning text-dark">${row.JUMLAHBELUMKCKR ?? 0}</span>
-                <br><small class="text-muted" style="font-size:.7rem">📄${row.BELUMKCKR_CETAK??0} 🎬${row.BELUMKCKR_REKAM??0}</small>
-            </td>
+            <td class="text-center"><span class="badge bg-success">${row.JUMLAHSUDAHKCKR ?? 0}</span></td>
+            <td class="text-center text-muted">${row.SUDAHKCKR_CETAK ?? 0}</td>
+            <td class="text-center text-muted">${row.SUDAHKCKR_REKAM ?? 0}</td>
+            <td class="text-center"><span class="badge bg-warning text-dark">${row.JUMLAHBELUMKCKR ?? 0}</span></td>
+            <td class="text-center text-muted">${row.BELUMKCKR_CETAK ?? 0}</td>
+            <td class="text-center text-muted">${row.BELUMKCKR_REKAM ?? 0}</td>
             <td class="text-center"><span class="badge bg-danger">${row.JUMLAHTERLAMBATKCKR ?? 0}</span></td>
             <td class="text-center"><span class="badge bg-success">${row.JUMLAHTEPATWAKTUKCKR ?? 0}</span></td>
             <td class="text-center">${pctBadge(row.PERSENTASE_KCKR)}</td>
+            <td class="text-center">${(row.JUMLAHTERLAMBATKCKR > 0 && parseFloat(row.PERSENTASE_KCKR) <= 20)
+                ? `<span class="badge" style="background:#fd7e14">Blokir SS KCKR</span>`
+                : `<span class="badge bg-success">Baik</span>`}</td>
         </tr>`;
     }).join('');
 }
@@ -522,27 +486,29 @@ function goToPage(page) {
     setTimeout(() => loadData(page), 300);
 }
 
-function toggleDateFilter() {
-    const type = document.querySelector('input[name="filter_type"]:checked')?.value ?? 'tahun';
-    document.querySelectorAll('.filter-section').forEach(el => el.style.display = 'none');
-    document.getElementById('filter_' + type).style.display = '';
-}
-
-function selectAllProvinces(check) {
-    document.querySelectorAll('.province-cb').forEach(cb => cb.checked = check);
+function onFilterTypeChange() {
+    const type = document.getElementById('filterType').value;
+    const map = { tahun: ['wrapTahun'], bulan: ['wrapBulan','wrapTahun'], range: ['wrapRangeFrom','wrapRangeTo'] };
+    ['wrapTahun','wrapBulan','wrapRangeFrom','wrapRangeTo'].forEach(id => {
+        const el = document.getElementById(id);
+        const active = (map[type] || []).includes(id);
+        el.classList.toggle('d-none', !active);
+        el.querySelectorAll('input,select').forEach(inp => inp.disabled = !active);
+    });
 }
 
 function resetFilter() {
     sortCol = 'CREATEDATE';
     sortDir = 'DESC';
     updateSortIcons();
-    document.querySelector('#type_tahun').checked = true;
-    toggleDateFilter();
-    document.querySelector('[name="filter_year"]').value = '2025';
-    document.querySelector('[name="kategori"]').value    = '';
-    document.querySelector('[name="persentase"]').value  = '';
-    document.querySelector('[name="search"]').value      = '';
-    selectAllProvinces(false);
+    document.getElementById('filterType').value        = 'tahun';
+    document.getElementById('filterYear').value        = '2025';
+    document.getElementById('filterKategori').value     = '';
+    document.getElementById('filterRekomendasi').value = '';
+    document.getElementById('filterPersentase').value  = '';
+    document.getElementById('searchInput').value       = '';
+    [...document.getElementById('provinceFilter').options].forEach(o => o.selected = false);
+    onFilterTypeChange();
     document.getElementById('summarySection').style.display = 'none';
     document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" class="text-center text-muted py-5">Pilih filter dan klik Tampilkan</td></tr>';
     document.getElementById('paginationWrap').style.display = 'none';
@@ -660,7 +626,7 @@ function getProgressLabel(sec, withDetail) {
 }
 
 // Init
-toggleDateFilter();
+onFilterTypeChange();
 
 @if(request()->hasAny(['filter_type', 'filter_year', 'filter_month', 'start_date', 'province_ids']))
 document.addEventListener('DOMContentLoaded', function() { loadData(1); });
